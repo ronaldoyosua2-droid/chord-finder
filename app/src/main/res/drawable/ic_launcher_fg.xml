@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- tuts putih -->
+    <path android:fillColor="#ECEAE4" android:pathData="M30,40h11v32h-11z" />
+    <path android:fillColor="#ECEAE4" android:pathData="M42.5,40h11v32h-11z" />
+    <path android:fillColor="#ECEAE4" android:pathData="M55,40h11v32h-11z" />
+    <path android:fillColor="#ECEAE4" android:pathData="M67.5,40h11v32h-11z" />
+    <!-- tuts hitam -->
+    <path android:fillColor="#16161D" android:pathData="M37.5,40h7v19h-7z" />
+    <path android:fillColor="#16161D" android:pathData="M50,40h7v19h-7z" />
+    <path android:fillColor="#16161D" android:pathData="M64,40h7v19h-7z" />
+    <!-- aksen emas -->
+    <path android:fillColor="#F5B342" android:pathData="M30,32h48.5v5h-48.5z" />
+</vector>
