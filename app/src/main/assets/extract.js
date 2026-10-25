@@ -34,6 +34,15 @@
       best = txt; bestScore = Math.max(s, bestScore); bestLen = txt.length;
     }
   }
+  // Situs chord (JRChord, PsalmNote) biasanya menaruh chord di <pre>; utamakan itu
+  var pres = document.querySelectorAll('pre');
+  var preBest = null, preScore = 0;
+  for (var j = 0; j < pres.length; j++) {
+    var pt = pres[j].innerText || '';
+    var ps = score(pt);
+    if (ps > preScore) { preScore = ps; preBest = pt; }
+  }
+  if (preBest && preScore >= 3 && preScore >= bestScore * 0.6) { best = preBest; bestScore = preScore; }
   var h1 = document.querySelector('h1');
   var title = (h1 && h1.innerText.trim()) || document.title || '';
   return JSON.stringify({ title: title, pageTitle: document.title || '', text: best || '', score: bestScore, url: location.href });

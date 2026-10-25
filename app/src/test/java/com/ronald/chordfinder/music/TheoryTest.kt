@@ -40,3 +40,19 @@ class TheoryTest {
         assertEquals("Bb(1) Cm(2) F(5)", r[0].text)
     }
 }
+
+class CleanupTest {
+    @Test fun dropsSiteKeyPicker() {
+        val raw = (listOf("A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#") +
+            listOf("Intro :", "C  Am  F  C", "Lirik")).joinToString("\n")
+        val lines = SongParser.parse(raw)
+        val chords = SongParser.allChords(lines)
+        assertEquals(4, chords.size)
+    }
+
+    @Test fun hidesKeyLine() {
+        val lines = SongParser.parse("Do = A\n\nA  Bm\nLirik")
+        assertEquals(false, lines.any { it is Line.Lyric && it.text.startsWith("Do") })
+        assertEquals(9, KeyDetector.detect("Do = A\n\nA  Bm\nLirik", lines)!!.keyPc)
+    }
+}

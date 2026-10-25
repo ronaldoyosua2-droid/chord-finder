@@ -42,14 +42,41 @@ object SongParser {
             }
             out.add(classify(rawLine))
         }
+        dropChordPickers(out)
         // Rapikan: buang baris kosong berlebihan di awal/akhir dan berurutan
         val cleaned = ArrayList<Line>()
         for (l in out) {
+            // "Do = A" / "Key: A" sudah ditampilkan di kepala lagu
+            if (l is Line.Lyric && cleaned.none { it is Line.Lyric } && KeyDetector.explicit(l.text) != null &&
+                l.text.trim().length <= 24
+            ) continue
             if (l is Line.Blank && (cleaned.isEmpty() || cleaned.last() is Line.Blank)) continue
             cleaned.add(l)
         }
         while (cleaned.isNotEmpty() && cleaned.last() is Line.Blank) cleaned.removeAt(cleaned.size - 1)
         return cleaned
+    }
+
+    /**
+     * Buang daftar tombol kunci dari situs (A, A#, B, C … satu chord per baris),
+     * yaitu 5+ baris berturut-turut yang masing-masing hanya berisi satu chord mayor polos.
+     */
+    private fun dropChordPickers(lines: MutableList<Line>) {
+        var i = 0
+        while (i < lines.size) {
+            var j = i
+            val roots = HashSet<Int>()
+            while (j < lines.size) {
+                val l = lines[j] as? Line.Chords ?: break
+                if (l.items.size != 1) break
+                val c = (l.items[0] as? Item.ChordItem)?.chord ?: break
+                if (c.suffix.isNotEmpty() || c.bass != null || !roots.add(c.root)) break
+                j++
+            }
+            if (j - i >= 5) {
+                repeat(j - i) { lines.removeAt(i) }
+            } else i = maxOf(j, i + 1)
+        }
     }
 
     fun normalize(raw: String): String = raw
