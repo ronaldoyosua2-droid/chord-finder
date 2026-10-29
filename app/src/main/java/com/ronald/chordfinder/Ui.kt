@@ -22,6 +22,8 @@ object C {
     val NUMBER = Color.parseColor("#6FD3C6")
     val SECTION = Color.parseColor("#C9A7FF")
     val STAR = Color.parseColor("#F5B342")
+    val MOD = Color.parseColor("#FF8FA3")
+    val YT = Color.parseColor("#FF3B3B")
 }
 
 fun Context.dp(v: Int) = (v * resources.displayMetrics.density).toInt()
@@ -84,6 +86,7 @@ fun cleanTitle(raw: String): String {
     var t = raw.trim()
     t = t.replace(Regex("\\s*[|–—-]\\s*(JRChord|PsalmNote|Psalmnote|psalmnote\\.com|jrchord\\.com)\\s*$", RegexOption.IGNORE_CASE), "")
     t = t.replace(Regex("^(chord|kunci gitar|kunci|lirik( dan| &)? chord|chord( dan| &)? lirik|lirik)\\s+(lagu\\s+)?", RegexOption.IGNORE_CASE), "")
+    t = t.replace(Regex("\\s+(chords?\\s*(&|and|dan)\\s*lyrics?|lirik\\s*(&|dan)\\s*chord)\\b", RegexOption.IGNORE_CASE), "")
     t = t.replace(Regex("\\s+(chord|chords|lirik)$", RegexOption.IGNORE_CASE), "")
     return t.trim().ifEmpty { raw.trim() }
 }

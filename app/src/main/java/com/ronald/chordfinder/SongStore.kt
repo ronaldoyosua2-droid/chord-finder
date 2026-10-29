@@ -18,6 +18,15 @@ data class Song(
     var transpose: Int = 0,
     var starred: Boolean = false,
     var updated: Long = System.currentTimeMillis(),
+    /** Kata kunci pencarian YouTube (judul + penyanyi dari halaman sumber) */
+    var query: String = "",
+    /** Modulasi manual: indeks baris -> Do baru (-1 = abaikan penanda di baris itu) */
+    var mods: MutableMap<Int, Int> = HashMap(),
+    /** Saran modulasi yang sudah ditolak (indeks baris) */
+    var modDismissed: MutableSet<Int> = HashSet(),
+    var ytId: String = "",
+    var ytTitle: String = "",
+    var ytChannel: String = "",
 ) {
     @Transient private var index: String? = null
 
@@ -30,6 +39,10 @@ data class Song(
     fun toJson() = JSONObject().apply {
         put("id", id); put("title", title); put("source", source); put("raw", raw)
         put("key", key); put("transpose", transpose); put("starred", starred); put("updated", updated)
+        put("query", query)
+        put("mods", JSONObject().apply { mods.forEach { (k, v) -> put(k.toString(), v) } })
+        put("modDismissed", JSONArray().apply { modDismissed.forEach { put(it) } })
+        put("ytId", ytId); put("ytTitle", ytTitle); put("ytChannel", ytChannel)
     }
 
     companion object {
@@ -42,6 +55,16 @@ data class Song(
             transpose = o.optInt("transpose", 0),
             starred = o.optBoolean("starred", false),
             updated = o.optLong("updated", 0L),
+            query = o.optString("query"),
+            mods = HashMap<Int, Int>().apply {
+                o.optJSONObject("mods")?.let { m -> m.keys().forEach { k -> put(k.toInt(), m.getInt(k)) } }
+            },
+            modDismissed = HashSet<Int>().apply {
+                o.optJSONArray("modDismissed")?.let { a -> for (i in 0 until a.length()) add(a.getInt(i)) }
+            },
+            ytId = o.optString("ytId"),
+            ytTitle = o.optString("ytTitle"),
+            ytChannel = o.optString("ytChannel"),
         )
     }
 }

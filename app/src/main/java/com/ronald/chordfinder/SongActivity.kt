@@ -1,5 +1,8 @@
 package com.ronald.chordfinder
 
+import android.annotation.SuppressLint
+import android.app.Dialog
+import android.content.ClipboardManager
 import android.content.Intent
 import android.graphics.Typeface
 import android.net.Uri
@@ -8,17 +11,28 @@ import android.os.Handler
 import android.os.Looper
 import android.text.SpannableStringBuilder
 import android.text.Spanned
+import android.text.TextUtils
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.text.style.StyleSpan
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupMenu
+import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -26,8 +40,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.ronald.chordfinder.music.KeyDetector
 import com.ronald.chordfinder.music.Line
+import com.ronald.chordfinder.music.Modulation
 import com.ronald.chordfinder.music.Notes
 import com.ronald.chordfinder.music.NumberMode
+import com.ronald.chordfinder.music.RenderedLine
 import com.ronald.chordfinder.music.Renderer
 import com.ronald.chordfinder.music.SongParser
 import com.ronald.chordfinder.music.Span
@@ -39,6 +55,7 @@ class SongActivity : AppCompatActivity() {
         const val EXTRA_TITLE = "title"
         const val EXTRA_TEXT = "text"
         const val EXTRA_SOURCE = "source"
+        const val EXTRA_QUERY = "query"
         private val SPEEDS = intArrayOf(1, 2, 3, 4, 6)
     }
 
@@ -46,6 +63,9 @@ class SongActivity : AppCompatActivity() {
     private var saved = false
     private var lines: List<Line> = emptyList()
     private var keyExplicit = false
+    private var rendered: List<RenderedLine> = emptyList()
+    private var renderedOffset = 0
+    private var suggestion: Modulation.Suggestion? = null
 
     private lateinit var titleView: TextView
     private lateinit var subView: TextView
@@ -55,12 +75,29 @@ class SongActivity : AppCompatActivity() {
     private lateinit var numBtn: TextView
     private lateinit var saveBtn: TextView
     private lateinit var playBtn: TextView
-    private lateinit var speedBtn: TextView
+    private lateinit var ytBtn: TextView
     private lateinit var scroll: ScrollView
+
+    // YouTube
+    private lateinit var ytCard: LinearLayout
+    private lateinit var ytThumb: ImageView
+    private lateinit var ytLabel: TextView
+    private lateinit var ytTitle: TextView
+    private lateinit var ytSub: TextView
+    private lateinit var playerBox: LinearLayout
+    private var player: WebView? = null
+    private var playing = false
+    private var searching = false
+    private var results: List<Video>? = null
+
+    // Modulasi
+    private lateinit var modBanner: LinearLayout
+    private lateinit var modText: TextView
 
     private val handler = Handler(Looper.getMainLooper())
     private var scrolling = false
     private var speedIdx = 1
+    private var lastTouchY = 0f
     private val scroller = object : Runnable {
         override fun run() {
             if (!scrolling) return
@@ -84,16 +121,25 @@ class SongActivity : AppCompatActivity() {
                 title = intent.getStringExtra(EXTRA_TITLE) ?: "Tanpa judul",
                 raw = intent.getStringExtra(EXTRA_TEXT) ?: "",
                 source = intent.getStringExtra(EXTRA_SOURCE) ?: "",
+                query = intent.getStringExtra(EXTRA_QUERY) ?: "",
             )
         }
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(buildUi().apply { fitSystemBars() })
         reparse()
+        updateYtCard()
+        if (song.ytId.isEmpty()) autoSearch()
     }
 
     override fun onPause() {
         super.onPause()
         setScrolling(false)
+        player?.evaluateJavascript("pause()", null)
+    }
+
+    override fun onDestroy() {
+        player?.destroy()
+        super.onDestroy()
     }
 
     private fun reparse() {
@@ -108,6 +154,7 @@ class SongActivity : AppCompatActivity() {
 
     // ---------------------------------------------------------------- UI
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun buildUi(): View {
         val root = vbox().apply { setBackgroundColor(C.BG) }
 
@@ -131,6 +178,10 @@ class SongActivity : AppCompatActivity() {
         top.addView(iconBtn("⋮") { v -> menu(v) })
         root.addView(top)
 
+        root.addView(buildYtCard())
+        root.addView(buildPlayer())
+        root.addView(buildModBanner())
+
         // Isi chord (gulir dua arah supaya baris panjang tidak patah dan tetap sejajar)
         scroll = ScrollView(this).apply { isFillViewport = true }
         val hs = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
@@ -144,8 +195,12 @@ class SongActivity : AppCompatActivity() {
         }
         hs.addView(body)
         scroll.addView(hs)
-        // Ketuk teks untuk jeda/lanjut auto-scroll
+        body.setOnTouchListener { _, e ->
+            if (e.action == MotionEvent.ACTION_DOWN) lastTouchY = e.y
+            false
+        }
         body.setOnClickListener { if (scrolling) setScrolling(false) }
+        body.setOnLongClickListener { lineMenu(); true }
         root.addView(scroll, lp(MATCH, 0, 1f))
 
         // Panel kontrol bawah
@@ -162,22 +217,38 @@ class SongActivity : AppCompatActivity() {
         row1.addView(numBtn, lp(WRAP, WRAP).apply { leftMargin = dp(10) })
         panel.addView(row1)
 
-        val row2 = hbox().apply { setPadding(0, dp(8), 0, 0) }
-        row2.addView(pill("A−") { font(-1f) })
-        row2.addView(pill("A+") { font(1f) }, lp(WRAP, WRAP).apply { leftMargin = dp(6) })
-        playBtn = pill("▶ Scroll") { setScrolling(!scrolling) }
-        row2.addView(playBtn, lp(WRAP, WRAP).apply { leftMargin = dp(10) })
-        speedBtn = pill("") { speedIdx = (speedIdx + 1) % SPEEDS.size; updateSpeed() }
-        row2.addView(speedBtn, lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        val row2Scroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            isFillViewport = true
+            setPadding(0, dp(8), 0, 0)
+        }
+        val row2 = hbox()
+        row2.addView(small(pill("A−") { font(-1f) }))
+        row2.addView(small(pill("A+") { font(1f) }), lp(WRAP, WRAP).apply { leftMargin = dp(5) })
+        ytBtn = small(pill("▶ YouTube") { ytButton() })
+        row2.addView(ytBtn, lp(WRAP, WRAP).apply { leftMargin = dp(8) })
+        playBtn = small(pill("▶ Scroll") { setScrolling(!scrolling) })
+        playBtn.setOnLongClickListener {
+            speedIdx = (speedIdx + 1) % SPEEDS.size
+            Toast.makeText(this, "Kecepatan scroll: ${speedIdx + 1}x", Toast.LENGTH_SHORT).show()
+            true
+        }
+        row2.addView(playBtn, lp(WRAP, WRAP).apply { leftMargin = dp(5) })
         row2.addView(View(this), lp(0, 1, 1f))
-        saveBtn = pill("Simpan") { if (!saved) save() }
-        row2.addView(saveBtn)
-        panel.addView(row2)
+        saveBtn = small(pill("Simpan") { if (!saved) save() })
+        row2.addView(saveBtn, lp(WRAP, WRAP).apply { leftMargin = dp(8) })
+        row2Scroll.addView(row2, ViewGroup.LayoutParams(MATCH, WRAP))
+        panel.addView(row2Scroll)
         root.addView(panel)
 
         updateTop()
-        updateSpeed()
+        updateYtButton()
         return root
+    }
+
+    private fun small(t: TextView): TextView = t.apply {
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
+        setPadding(dp(12), dp(8), dp(12), dp(8))
     }
 
     private fun iconBtn(text: String, onClick: (View) -> Unit) = TextView(this).apply {
@@ -198,6 +269,7 @@ class SongActivity : AppCompatActivity() {
         starView.setTextColor(if (song.starred) C.STAR else C.TEXT)
         saveBtn.text = if (saved) "✓ Tersimpan" else "Simpan"
         saveBtn.setPill(!saved)
+        small(saveBtn)
     }
 
     private fun mode(): NumberMode = NumberMode.valueOf(Prefs.numberMode(this))
@@ -217,14 +289,18 @@ class SongActivity : AppCompatActivity() {
         }
 
         val sb = SpannableStringBuilder()
+        val hasMod = lines.indices.any { Modulation.isChangeAt(lines, song.mods, it) }
         val header = "Do = ${Notes.keyName(target)}" + (if (song.transpose != 0) "   (asli: ${Notes.keyName(song.key)})" else "") +
-            (if (!keyExplicit) "   · kunci terdeteksi otomatis" else "")
+            (if (!keyExplicit) "   · kunci terdeteksi otomatis" else "") +
+            (if (hasMod) "   · ada modulasi" else "")
         sb.append(header, ForegroundColorSpan(C.MUTED), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         sb.append("\n\n")
+        renderedOffset = 2
 
-        val rendered = Renderer.render(lines, song.key, song.transpose, mode())
+        rendered = Renderer.render(lines, song.key, song.transpose, mode(), song.mods)
         if (rendered.none { it.spans.any { s -> s.kind == Span.Kind.CHORD } }) {
             sb.append("(Tidak ada chord yang terbaca di teks ini.)\n\n", ForegroundColorSpan(C.MUTED), 0)
+            renderedOffset += 2
         }
         for (rl in rendered) {
             val base = sb.length
@@ -245,12 +321,393 @@ class SongActivity : AppCompatActivity() {
                         sb.setSpan(ForegroundColorSpan(C.SECTION), a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                         sb.setSpan(StyleSpan(Typeface.BOLD), a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     }
+                    Span.Kind.MODULATION -> {
+                        sb.setSpan(ForegroundColorSpan(C.MOD), a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(StyleSpan(Typeface.BOLD), a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
                     Span.Kind.LABEL -> sb.setSpan(ForegroundColorSpan(C.MUTED), a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 }
             }
             sb.append('\n')
         }
         body.text = sb
+        updateSuggestion()
+    }
+
+    // -------------------------------------------------------- Modulasi
+
+    private fun buildModBanner(): View {
+        modBanner = hbox().apply {
+            setPadding(dp(12), dp(8), dp(8), dp(8))
+            background = rounded(C.SURFACE2, dpf(14f), dp(1), C.MOD)
+            visibility = View.GONE
+        }
+        modText = label("", 13.5f, C.TEXT)
+        modBanner.addView(modText, lp(0, WRAP, 1f))
+        modBanner.addView(small(pill("Pakai") { acceptSuggestion() }).apply { setPill(true); small(this) },
+            lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        modBanner.addView(small(pill("Abaikan") { dismissSuggestion() }),
+            lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        modBanner.layoutParams = lp(MATCH, WRAP).apply { setMargins(dp(12), 0, dp(12), dp(8)) }
+        return modBanner
+    }
+
+    private fun updateSuggestion() {
+        val keys = Modulation.keys(lines, song.key, song.mods)
+        suggestion = Modulation.suggest(lines, keys, song.mods, song.modDismissed)
+        val s = suggestion
+        if (s == null) { modBanner.visibility = View.GONE; return }
+        modText.text = "Sepertinya \"${s.sectionName}\" naik ke Do = ${Notes.keyName(s.newKey + song.transpose)}. Pakai?"
+        modBanner.visibility = View.VISIBLE
+    }
+
+    private fun acceptSuggestion() {
+        val s = suggestion ?: return
+        song.mods[s.lineIndex] = s.newKey
+        persistIfSaved()
+        render()
+    }
+
+    private fun dismissSuggestion() {
+        val s = suggestion ?: return
+        song.modDismissed.add(s.lineIndex)
+        persistIfSaved()
+        render()
+    }
+
+    /** Tekan lama pada baris: atur modulasi mulai dari baris itu. */
+    private fun lineMenu() {
+        val layout = body.layout ?: return
+        val line = layout.getLineForVertical((lastTouchY - body.totalPaddingTop).toInt())
+        val r = rendered.getOrNull(line - renderedOffset) ?: return
+        val src = r.src
+        if (src < 0) return
+        val keys = Modulation.keys(lines, song.key, song.mods)
+        val cur = keys[src]
+        val hasChange = Modulation.isChangeAt(lines, song.mods, src)
+        val items = ArrayList<String>()
+        for (i in 0 until 12) {
+            val k = Notes.mod12(song.key + i)
+            val name = "Do = " + Notes.keyName(k + song.transpose)
+            items.add(if (k == cur && hasChange) "$name   (sekarang)" else name)
+        }
+        if (hasChange) items.add("✕ Hapus modulasi di sini")
+        AlertDialog.Builder(this)
+            .setTitle("Modulasi mulai di baris ini")
+            .setItems(items.toTypedArray()) { _, which ->
+                if (which == 12) {
+                    if (song.mods.containsKey(src) && lines[src] !is Line.KeyChange) song.mods.remove(src)
+                    else song.mods[src] = -1
+                } else {
+                    song.mods[src] = Notes.mod12(song.key + which)
+                }
+                persistIfSaved()
+                render()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
+
+    // --------------------------------------------------------- YouTube
+
+    private fun buildYtCard(): View {
+        ytCard = hbox().apply {
+            setPadding(dp(8), dp(8), dp(10), dp(8))
+            background = rounded(C.SURFACE2, dpf(14f), dp(1), C.LINE)
+            isClickable = true
+            setOnClickListener { if (song.ytId.isNotEmpty()) openPlayer() else pickerDialog() }
+            setOnLongClickListener { pickerDialog(); true }
+        }
+        ytThumb = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = rounded(C.LINE, dpf(8f))
+            clipToOutline = true
+        }
+        ytCard.addView(ytThumb, lp(dp(104), dp(58)))
+        val txt = vbox().apply { setPadding(dp(10), 0, 0, 0) }
+        ytLabel = label("", 11f, C.YT, bold = true)
+        ytTitle = label("", 13.5f, C.TEXT, bold = true).apply { maxLines = 2; ellipsize = TextUtils.TruncateAt.END }
+        ytSub = label("", 12f, C.MUTED).apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END }
+        txt.addView(ytLabel); txt.addView(ytTitle); txt.addView(ytSub)
+        ytCard.addView(txt, lp(0, WRAP, 1f))
+        ytCard.layoutParams = lp(MATCH, WRAP).apply { setMargins(dp(12), 0, dp(12), dp(8)) }
+        return ytCard
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun buildPlayer(): View {
+        playerBox = vbox().apply { visibility = View.GONE }
+        val h = (resources.displayMetrics.widthPixels * 9 / 16).coerceAtMost(dp(240))
+        val frame = FrameLayout(this).apply { setBackgroundColor(0xFF000000.toInt()) }
+        playerBox.addView(frame, lp(MATCH, h))
+        val tools = hbox().apply { setPadding(dp(12), dp(8), dp(12), dp(8)) }
+        tools.addView(small(pill("⟲ 10 dtk") { player?.evaluateJavascript("back10()", null) }))
+        tools.addView(small(pill("Ganti video") { pickerDialog() }), lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        tools.addView(small(pill("YouTube ↗") { openInYouTube() }), lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        tools.addView(View(this), lp(0, 1, 1f))
+        tools.addView(small(pill("✕") { closePlayer() }))
+        val toolsScroll = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; isFillViewport = true }
+        toolsScroll.addView(tools, ViewGroup.LayoutParams(MATCH, WRAP))
+        playerBox.addView(toolsScroll)
+        playerBox.tag = frame
+        return playerBox
+    }
+
+    private fun updateYtCard() {
+        val playerOpen = playerBox.visibility == View.VISIBLE
+        when {
+            playerOpen -> ytCard.visibility = View.GONE
+            song.ytId.isNotEmpty() -> {
+                ytCard.visibility = View.VISIBLE
+                ytLabel.text = "▶ VIDEO YOUTUBE"
+                ytTitle.text = song.ytTitle.ifEmpty { "Video YouTube" }
+                ytSub.text = listOf(song.ytChannel, "ketuk untuk putar").filter { it.isNotEmpty() }.joinToString(" · ")
+                YouTube.loadThumb(song.ytId, ytThumb)
+            }
+            searching -> {
+                ytCard.visibility = View.VISIBLE
+                ytLabel.text = "YOUTUBE"
+                ytTitle.text = "Mencari video…"
+                ytSub.text = ytQuery()
+                ytThumb.setImageDrawable(null)
+            }
+            results != null -> {
+                ytCard.visibility = View.VISIBLE
+                ytLabel.text = "YOUTUBE"
+                ytTitle.text = "Video tidak ditemukan"
+                ytSub.text = "Ketuk untuk cari dengan kata lain"
+                ytThumb.setImageDrawable(null)
+            }
+            else -> ytCard.visibility = View.GONE
+        }
+    }
+
+    private fun updateYtButton() {
+        ytBtn.text = if (playing) "❚❚ YouTube" else "▶ YouTube"
+        ytBtn.background = rounded(C.YT, dpf(18f))
+        ytBtn.setTextColor(0xFFFFFFFF.toInt())
+        ytBtn.setTypeface(Typeface.DEFAULT, Typeface.BOLD)
+    }
+
+    private fun ytQuery(): String {
+        val base = song.query.ifBlank { song.title }
+        return base.replace(Regex("[()\\[\\]]"), " ").replace(Regex("\\s+"), " ").trim()
+    }
+
+    private fun autoSearch() {
+        searching = true
+        updateYtCard()
+        YouTube.search(ytQuery()) { list ->
+            searching = false
+            results = list ?: emptyList()
+            val first = list?.firstOrNull()
+            if (first != null && song.ytId.isEmpty()) {
+                setVideo(first)
+            }
+            updateYtCard()
+        }
+    }
+
+    private fun setVideo(v: Video) {
+        song.ytId = v.id
+        song.ytTitle = v.title
+        song.ytChannel = v.channel
+        persistIfSaved()
+        updateYtCard()
+    }
+
+    private fun ytButton() {
+        when {
+            song.ytId.isEmpty() -> pickerDialog()
+            playerBox.visibility != View.VISIBLE -> openPlayer()
+            else -> player?.evaluateJavascript("toggle()", null)
+        }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun openPlayer() {
+        if (song.ytId.isEmpty()) return
+        val frame = playerBox.tag as FrameLayout
+        if (player == null) {
+            player = WebView(this).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.mediaPlaybackRequiresUserGesture = false
+                setBackgroundColor(0xFF000000.toInt())
+                webChromeClient = WebChromeClient()
+                webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(view: WebView, req: android.webkit.WebResourceRequest): Boolean {
+                        // Tautan keluar (logo YouTube, dll.) dibuka di aplikasi YouTube
+                        startActivity(Intent(Intent.ACTION_VIEW, req.url))
+                        return true
+                    }
+                }
+                addJavascriptInterface(Bridge(), "Android")
+            }
+            frame.addView(player, FrameLayout.LayoutParams(MATCH, MATCH))
+        }
+        player!!.loadDataWithBaseURL(YouTube.ORIGIN + "/", YouTube.playerHtml(song.ytId), "text/html", "utf-8", null)
+        playerBox.visibility = View.VISIBLE
+        updateYtCard()
+    }
+
+    private fun closePlayer() {
+        player?.evaluateJavascript("pause()", null)
+        player?.loadUrl("about:blank")
+        playerBox.visibility = View.GONE
+        playing = false
+        updateYtButton()
+        updateYtCard()
+    }
+
+    private fun openInYouTube() {
+        if (song.ytId.isEmpty()) return
+        player?.evaluateJavascript("pause()", null)
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=${song.ytId}")))
+    }
+
+    private inner class Bridge {
+        @JavascriptInterface
+        fun state(s: Int) = runOnUiThread {
+            playing = s == 1 || s == 3
+            updateYtButton()
+        }
+
+        @JavascriptInterface
+        fun error(code: Int) = runOnUiThread {
+            val msg = if (code == 101 || code == 150 || code == 152 || code == 153)
+                "Pemilik video tidak mengizinkan diputar di aplikasi lain. Pilih video lain atau buka di YouTube."
+            else "Video tidak bisa diputar (kode $code)."
+            AlertDialog.Builder(this@SongActivity)
+                .setMessage(msg)
+                .setPositiveButton("Pilih video lain") { _, _ -> pickerDialog() }
+                .setNeutralButton("Buka di YouTube") { _, _ -> openInYouTube() }
+                .setNegativeButton("Tutup", null)
+                .show()
+        }
+    }
+
+    /** Daftar pilihan video: hasil pencarian, ubah kata kunci, atau tempel link sendiri. */
+    private fun pickerDialog() {
+        val dlg = Dialog(this)
+        val root = vbox().apply {
+            setPadding(dp(14), dp(16), dp(14), dp(14))
+            background = rounded(C.SURFACE, dpf(20f))
+        }
+        root.addView(label("Pilih video YouTube", 17f, C.TEXT, bold = true))
+        val sub = label("", 12.5f, C.MUTED).apply { setPadding(0, dp(2), 0, dp(10)) }
+        root.addView(sub)
+        val input = EditText(this).apply {
+            setText(ytQuery())
+            setSingleLine()
+            imeOptions = EditorInfo.IME_ACTION_SEARCH
+            setTextColor(C.TEXT)
+            setHintTextColor(C.MUTED)
+            hint = "Kata kunci, mis. judul + \"live\""
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            background = rounded(C.BG, dpf(12f), dp(1), C.LINE)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        root.addView(input)
+        val progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            isIndeterminate = true; visibility = View.GONE
+        }
+        root.addView(progress, lp(MATCH, dp(4)).apply { topMargin = dp(6) })
+        val list = vbox()
+        val listScroll = ScrollView(this)
+        listScroll.addView(list)
+        root.addView(listScroll, lp(MATCH, (resources.displayMetrics.heightPixels * 0.45).toInt()))
+        root.addView(small(pill("📋 Tempel link YouTube sendiri") { pasteLink(dlg) }),
+            lp(MATCH, WRAP).apply { topMargin = dp(10) })
+
+        fun show(videos: List<Video>?) {
+            list.removeAllViews()
+            if (videos.isNullOrEmpty()) {
+                list.addView(label(if (videos == null) "Gagal mencari. Periksa internet." else "Tidak ada hasil.", 14f, C.MUTED)
+                    .apply { setPadding(dp(6), dp(16), dp(6), dp(16)) })
+                return
+            }
+            for (v in videos) {
+                val row = hbox().apply {
+                    setPadding(dp(6), dp(6), dp(6), dp(6))
+                    if (v.id == song.ytId) background = rounded(C.SURFACE2, dpf(12f), dp(1), C.CHORD)
+                    isClickable = true
+                    setOnClickListener {
+                        setVideo(v)
+                        dlg.dismiss()
+                        openPlayer()
+                    }
+                }
+                val th = ImageView(this).apply {
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    background = rounded(C.LINE, dpf(8f))
+                    clipToOutline = true
+                }
+                YouTube.loadThumb(v.id, th)
+                val thFrame = FrameLayout(this)
+                thFrame.addView(th, FrameLayout.LayoutParams(MATCH, MATCH))
+                thFrame.addView(label(v.length, 10f, 0xFFFFFFFF.toInt()).apply {
+                    setPadding(dp(4), dp(1), dp(4), dp(1))
+                    background = rounded(0xCC000000.toInt(), dpf(3f))
+                }, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply { setMargins(0, 0, dp(4), dp(4)) })
+                row.addView(thFrame, lp(dp(104), dp(58)))
+                val t = vbox().apply { setPadding(dp(10), 0, 0, 0) }
+                t.addView(label(v.title + if (v.id == song.ytId) "  · DIPAKAI" else "", 13.5f, C.TEXT, bold = true).apply {
+                    maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+                })
+                t.addView(label(v.channel, 12f, C.MUTED).apply { maxLines = 1 })
+                row.addView(t, lp(0, WRAP, 1f))
+                list.addView(row, lp(MATCH, WRAP).apply { bottomMargin = dp(4) })
+            }
+        }
+
+        fun run(q: String) {
+            sub.text = "Hasil untuk \"$q\""
+            progress.visibility = View.VISIBLE
+            YouTube.search(q) { r ->
+                progress.visibility = View.GONE
+                results = r
+                show(r)
+            }
+        }
+
+        input.setOnEditorActionListener { _, _, _ -> run(input.text.toString().trim()); true }
+        if (results != null && input.text.toString() == ytQuery()) {
+            sub.text = "Hasil untuk \"${ytQuery()}\""
+            show(results)
+        } else run(ytQuery())
+
+        dlg.setContentView(root)
+        dlg.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dlg.window?.setLayout((resources.displayMetrics.widthPixels * 0.94).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dlg.show()
+    }
+
+    private fun pasteLink(parent: Dialog) {
+        val clip = (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).primaryClip
+        val fromClip = clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString().orEmpty()
+        val input = EditText(this).apply {
+            hint = "https://youtu.be/…"
+            setText(if (YouTube.parseId(fromClip) != null) fromClip else "")
+            setSingleLine()
+            setTextColor(C.TEXT)
+        }
+        val box = LinearLayout(this).apply { setPadding(dp(20), dp(8), dp(20), 0); addView(input, lp(MATCH, WRAP)) }
+        AlertDialog.Builder(this)
+            .setTitle("Tempel link YouTube")
+            .setView(box)
+            .setPositiveButton("Pakai") { _, _ ->
+                val id = YouTube.parseId(input.text.toString())
+                if (id == null) {
+                    Toast.makeText(this, "Link YouTube tidak dikenali", Toast.LENGTH_SHORT).show()
+                } else {
+                    setVideo(Video(id, "Video dari link", "", ""))
+                    parent.dismiss()
+                    openPlayer()
+                }
+            }
+            .setNegativeButton("Batal", null)
+            .show()
     }
 
     // ---------------------------------------------------------- Aksi
@@ -286,9 +743,8 @@ class SongActivity : AppCompatActivity() {
         if (on) handler.post(scroller)
         playBtn.text = if (on) "❚❚ Jeda" else "▶ Scroll"
         playBtn.setPill(on)
+        small(playBtn)
     }
-
-    private fun updateSpeed() { speedBtn.text = "${speedIdx + 1}x" }
 
     private fun save() {
         saved = true
@@ -352,6 +808,9 @@ class SongActivity : AppCompatActivity() {
             .setPositiveButton("Simpan") { _, _ ->
                 song.raw = input.text.toString()
                 song.key = -1
+                // Nomor baris berubah: modulasi manual direset
+                song.mods.clear()
+                song.modDismissed.clear()
                 persistIfSaved()
                 reparse()
             }
@@ -364,14 +823,16 @@ class SongActivity : AppCompatActivity() {
         if (song.source.isNotBlank()) pm.menu.add(0, 1, 0, "Buka halaman sumber")
         pm.menu.add(0, 2, 1, "Edit teks chord")
         pm.menu.add(0, 3, 2, "Ganti judul")
-        pm.menu.add(0, 5, 3, "Bagikan teks")
-        if (saved) pm.menu.add(0, 4, 4, "Hapus dari koleksi")
+        pm.menu.add(0, 6, 3, "Pilih video YouTube")
+        pm.menu.add(0, 5, 4, "Bagikan teks")
+        if (saved) pm.menu.add(0, 4, 5, "Hapus dari koleksi")
         pm.setOnMenuItemClickListener {
             when (it.itemId) {
                 1 -> startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(song.source)))
                 2 -> editTextDialog()
                 3 -> renameDialog()
                 5 -> share()
+                6 -> pickerDialog()
                 4 -> AlertDialog.Builder(this)
                     .setMessage("Hapus \"${song.title}\" dari koleksi?")
                     .setPositiveButton("Hapus") { _, _ -> SongStore.delete(this, song.id); finish() }
@@ -383,8 +844,9 @@ class SongActivity : AppCompatActivity() {
     }
 
     private fun share() {
-        val text = Renderer.render(lines, song.key, song.transpose, mode()).joinToString("\n") { it.text }
-        val full = "${song.title}\nDo = ${Notes.keyName(song.key + song.transpose)}\n\n$text"
+        val text = Renderer.render(lines, song.key, song.transpose, mode(), song.mods).joinToString("\n") { it.text }
+        val yt = if (song.ytId.isNotEmpty()) "\nYouTube: https://youtu.be/${song.ytId}" else ""
+        val full = "${song.title}\nDo = ${Notes.keyName(song.key + song.transpose)}$yt\n\n$text"
         startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, full)

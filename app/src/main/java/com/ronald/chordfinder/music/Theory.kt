@@ -53,6 +53,7 @@ data class Chord(val root: Int, val suffix: String, val bass: Int?) {
             val s = suffix
             return when {
                 s.startsWith("dim") || s.startsWith("°") || s.startsWith("ø") -> Quality.DIM
+                (s.startsWith("m7b5") || s.startsWith("m7-5") || s.startsWith("m(b5)")) -> Quality.DIM
                 s.startsWith("m") && !s.startsWith("maj") -> Quality.MINOR
                 s.startsWith("min") -> Quality.MINOR
                 s.startsWith("sus") || s == "5" -> Quality.NEUTRAL
@@ -69,9 +70,27 @@ data class Chord(val root: Int, val suffix: String, val bass: Int?) {
         return Notes.name(root, flats) + suffix + b
     }
 
-    /** Contoh kunci A: Bm -> "2", A/C# -> "1/3". */
+    /**
+     * Notasi angka. Angka polos = chord bawaan tangga nada
+     * (1, 4, 5 mayor; 2, 3, 6 minor; 7 diminished; nada di luar tangga dianggap mayor).
+     * Kalau berbeda diberi tanda: D di kunci C -> "2M", Fm di kunci C -> "4m".
+     * Contoh kunci A: Bm -> "2", A/C# -> "1/3", B -> "2M".
+     */
     fun number(keyPc: Int): String {
-        val r = Notes.degree(root, keyPc)
+        val d = Notes.mod12(root - keyPc)
+        val expected = when (d) {
+            0, 5, 7 -> Quality.MAJOR
+            2, 4, 9 -> Quality.MINOR
+            11 -> Quality.DIM
+            else -> Quality.MAJOR
+        }
+        val mark = when (quality) {
+            Quality.MAJOR -> if (expected != Quality.MAJOR) "M" else ""
+            Quality.MINOR -> if (expected != Quality.MINOR) "m" else ""
+            Quality.DIM -> if (expected != Quality.DIM) "dim" else ""
+            Quality.NEUTRAL -> ""
+        }
+        val r = Notes.degree(root, keyPc) + mark
         return if (bass != null) r + "/" + Notes.degree(bass, keyPc) else r
     }
 

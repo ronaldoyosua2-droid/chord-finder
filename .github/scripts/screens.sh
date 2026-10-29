@@ -51,27 +51,30 @@ adb shell am start -W -a android.intent.action.SEND -t text/plain \
   -n $PKG/.MainActivity
 shot 04-psalmnote 10
 
-# 5. Lagu contoh (lirik buatan) - notasi angka sejajar
+# 5. Lagu contoh (lirik buatan): tanda M/m + modulasi
 adb shell input keyevent 4; sleep 1
 SONG="$(cat .github/scripts/contoh.txt)"
-adb shell "am start -W -n $PKG/.SongActivity --es title 'Lagu Contoh' --es text '$SONG'"
-shot 05-angka-sejajar 4
+adb shell "am start -W -n $PKG/.SongActivity --es title 'Lagu Contoh' --es query 'Ajaib Kau Tuhan JPCC Worship' --es text '$SONG'"
+shot 05-angka-mm 8
+adb shell input swipe 540 1700 540 900 400
+shot 06-modulasi 2
 
-# 6. Mode angka di bawah chord
-tap_text "Angka:"
-shot 06-angka-bawah 2
+# 7. Putar YouTube
+tap_text "▶ YouTube"
+shot 07-youtube 12
 
-# 7. Transpose +2
-tap_text "Angka:"; sleep 1; tap_text "Angka:"   # kembali ke sejajar
-tap_text "+"; sleep 1; tap_text "+"
-shot 07-transpose 2
+# 8. Pilih video lain
+tap_text "Ganti video"
+shot 08-pilih-video 8
+adb shell input keyevent 4; sleep 1
 
-# 8. Simpan + bintang, lalu buka Koleksi
+# 9. Simpan + bintang, lalu buka Koleksi
+tap_text "✕"; sleep 1
 tap_text "Simpan"; sleep 1
 tap_text "☆"; sleep 1
 adb shell input keyevent 4; sleep 2
 tap_text "Koleksi"
-shot 08-koleksi 3
+shot 09-koleksi 3
 
 adb logcat -d -t 300 > shots/logcat.txt
 ls -la shots

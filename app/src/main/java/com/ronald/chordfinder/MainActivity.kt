@@ -340,6 +340,7 @@ class MainActivity : AppCompatActivity() {
             i.putExtra(SongActivity.EXTRA_TITLE, cleanTitle(f.optString("title")))
             i.putExtra(SongActivity.EXTRA_TEXT, f.optString("text"))
             i.putExtra(SongActivity.EXTRA_SOURCE, url)
+            i.putExtra(SongActivity.EXTRA_QUERY, cleanTitle(f.optString("pageTitle")))
         }
         startActivity(i)
     }

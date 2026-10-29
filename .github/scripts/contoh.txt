@@ -1,28 +1,27 @@
-Do = A
+Do = C
 
 Intro :
-| A   E/G#  | F#m   D   | Bm   E   | A   |
+| C   G/B  | Am   F   | Dm   G   | C   |
 
 Verse :
-A               E/G#
+C               E7
 Pagi ini ku datang lagi
-F#m             D
+Am              F
 Membawa hati yang sederhana
-Bm         C#m        D
+D               G
 Langkahku pelan namun pasti
-Bm          E
+Fm          G
 Ku ikut jalan-Mu
 
 Reff :
-D        E          C#m      F#m
+F        G          Em      Am
 Kaulah terang di tiap hari
-Bm         E            A    A7
+Dm         G            C    C7
 Tak ku sendiri melangkah
-D        E        C#m     F#m
-Kaulah alasan ku bernyanyi
-Bm       E        A
-Selamanya ku berserah
 
-Bridge :
-F#m     D      A       E
-Ho - o - o, ho - o - o
+Modulasi ke D
+Reff :
+G        A          F#m     Bm
+Kaulah terang di tiap hari
+Em         A            D
+Selamanya ku berserah

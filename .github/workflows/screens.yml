@@ -28,7 +28,7 @@ jobs:
       - name: Build APK
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          gradle :app:assembleRelease -q
+          gradle :app:testReleaseUnitTest :app:assembleRelease -q
           mkdir -p out && cp app/build/outputs/apk/release/app-release.apk out/app.apk
 
       - name: Enable KVM
