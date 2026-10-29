@@ -43,11 +43,15 @@ object YouTube {
         c.setRequestProperty("Cookie", "CONSENT=YES+1; SOCS=CAI")
         val html = c.inputStream.bufferedReader().use { it.readText() }
         c.disconnect()
-        val start = html.indexOf("ytInitialData")
-        if (start < 0) return emptyList()
-        val brace = html.indexOf('{', start)
+        return parseResults(html)
+    }
+
+    /** Ambil daftar video dari HTML halaman hasil pencarian YouTube. */
+    fun parseResults(html: String): List<Video> {
+        val m = Regex("(?:var ytInitialData|window\\[\"ytInitialData\"\\])\\s*=\\s*").find(html) ?: return emptyList()
+        val brace = m.range.last + 1
         val end = html.indexOf(";</script>", brace)
-        if (brace < 0 || end < 0) return emptyList()
+        if (brace >= html.length || html[brace] != '{' || end < 0) return emptyList()
         val data = JSONObject(html.substring(brace, end))
         val out = ArrayList<Video>()
         walk(data, out)
@@ -58,9 +62,17 @@ object YouTube {
         if (out.size >= 12) return
         when (node) {
             is JSONObject -> {
-                val vr = node.optJSONObject("videoRenderer")
-                if (vr != null) {
-                    toVideo(vr)?.let { out.add(it) }
+                for (k in arrayOf("videoRenderer", "compactVideoRenderer", "videoWithContextRenderer")) {
+                    val vr = node.optJSONObject(k)
+                    if (vr != null) {
+                        toVideo(vr)?.let { out.add(it) }
+                        return
+                    }
+                }
+                // Format baru YouTube (lockupViewModel)
+                val lv = node.optJSONObject("lockupViewModel")
+                if (lv != null) {
+                    fromLockup(lv)?.let { out.add(it) }
                     return
                 }
                 val keys = node.keys()
@@ -81,10 +93,29 @@ object YouTube {
 
     private fun toVideo(vr: JSONObject): Video? {
         val id = vr.optString("videoId").takeIf { it.length == 11 } ?: return null
-        val title = text(vr.optJSONObject("title"))
-        val channel = text(vr.optJSONObject("ownerText")).ifEmpty { text(vr.optJSONObject("longBylineText")) }
+        val title = text(vr.optJSONObject("title")).ifEmpty { text(vr.optJSONObject("headline")) }
+        val channel = text(vr.optJSONObject("ownerText"))
+            .ifEmpty { text(vr.optJSONObject("longBylineText")) }
+            .ifEmpty { text(vr.optJSONObject("shortBylineText")) }
         val length = text(vr.optJSONObject("lengthText"))
-        if (length.isEmpty()) return null // siaran langsung / bukan video biasa
+        if (title.isEmpty()) return null
+        return Video(id, title, channel, length)
+    }
+
+    private fun fromLockup(lv: JSONObject): Video? {
+        if (lv.optString("contentType").let { it.isNotEmpty() && !it.contains("VIDEO") }) return null
+        val id = lv.optString("contentId").takeIf { it.length == 11 } ?: return null
+        val meta = lv.optJSONObject("metadata")?.optJSONObject("lockupMetadataViewModel")
+        val title = meta?.optJSONObject("title")?.optString("content").orEmpty()
+        if (title.isEmpty()) return null
+        var channel = ""
+        meta?.optJSONObject("metadata")?.optJSONObject("contentMetadataViewModel")?.optJSONArray("metadataRows")
+            ?.optJSONObject(0)?.optJSONArray("metadataParts")?.optJSONObject(0)?.optJSONObject("text")
+            ?.optString("content")?.let { channel = it }
+        // durasi ada di badge thumbnail
+        var length = ""
+        Regex("\"text\":\"(\\d{1,2}:\\d{2}(?::\\d{2})?)\"").find(lv.optJSONObject("contentImage")?.toString().orEmpty())
+            ?.let { length = it.groupValues[1] }
         return Video(id, title, channel, length)
     }
 
