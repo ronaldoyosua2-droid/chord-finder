@@ -19,9 +19,9 @@ data class Video(val id: String, val title: String, val channel: String, val len
  * Video diputar lewat pemutar resmi YouTube (IFrame), bukan diunduh.
  */
 object YouTube {
-    private val pool = Executors.newFixedThreadPool(3)
-    private val main = Handler(Looper.getMainLooper())
-    private val thumbs = HashMap<String, Bitmap>()
+    private val pool by lazy { Executors.newFixedThreadPool(3) }
+    private val main by lazy { Handler(Looper.getMainLooper()) }
+    private val thumbs by lazy { HashMap<String, Bitmap>() }
 
     private const val UA =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
