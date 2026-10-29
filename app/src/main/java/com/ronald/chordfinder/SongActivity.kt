@@ -255,8 +255,9 @@ class SongActivity : AppCompatActivity() {
             setPadding(0, dp(8), 0, 0)
         }
         val row2 = hbox()
-        row2.addView(small(pill("A−") { font(-1f) }))
-        row2.addView(small(pill("A+") { font(1f) }), lp(WRAP, WRAP).apply { leftMargin = dp(5) })
+        row2.addView(small(pill("A−") { font(-1f) }).apply { setPadding(dp(9), dp(8), dp(9), dp(8)); minWidth = 0 })
+        row2.addView(small(pill("A+") { font(1f) }).apply { setPadding(dp(9), dp(8), dp(9), dp(8)); minWidth = 0 },
+            lp(WRAP, WRAP).apply { leftMargin = dp(4) })
         ytBtn = small(pill("▶ YouTube") { ytButton() })
         row2.addView(ytBtn, lp(WRAP, WRAP).apply { leftMargin = dp(8) })
         playBtn = small(pill("▶ Scroll") { setScrolling(!scrolling) })
@@ -440,6 +441,8 @@ class SongActivity : AppCompatActivity() {
             return
         }
         val preview = r.text.trim().take(40)
+        // Catatan di baris chord ditaruh sesudah liriknya (chord + lirik = satu kesatuan)
+        val target = if (lines.getOrNull(src) is Line.Chords && lines.getOrNull(src + 1) is Line.Lyric) src + 1 else src
         AlertDialog.Builder(this)
             .setTitle(preview.ifEmpty { "Baris ini" })
             .setItems(arrayOf(
@@ -448,8 +451,8 @@ class SongActivity : AppCompatActivity() {
                 "⤴  Modulasi mulai di sini\n     pilih Do baru",
             )) { _, w ->
                 when (w) {
-                    0 -> bridgeDialog(src, -1)
-                    1 -> noteDialog(src, -1)
+                    0 -> bridgeDialog(target, -1)
+                    1 -> noteDialog(target, -1)
                     2 -> modulationDialog(src)
                 }
             }.show()
@@ -490,7 +493,11 @@ class SongActivity : AppCompatActivity() {
         val key = keyAt(src)
         val existing = if (editIndex >= 0) song.notes[src]?.getOrNull(editIndex)?.text.orEmpty() else ""
         val box = vbox().apply { setPadding(dp(18), dp(6), dp(18), 0) }
-        box.addView(label("Sesudah: " + (rendered.firstOrNull { it.src == src && it.note < 0 }?.text?.trim()?.take(36) ?: ""),
+        val after = listOfNotNull(
+            rendered.firstOrNull { it.src == src - 1 && it.note < 0 && lines.getOrNull(src - 1) is Line.Chords }?.text?.trim(),
+            rendered.firstOrNull { it.src == src && it.note < 0 }?.text?.trim(),
+        ).joinToString("  /  ").take(48)
+        box.addView(label("Sesudah: $after",
             12f, C.MUTED).apply { typeface = Typeface.MONOSPACE })
         val input = EditText(this).apply {
             setText(existing)
