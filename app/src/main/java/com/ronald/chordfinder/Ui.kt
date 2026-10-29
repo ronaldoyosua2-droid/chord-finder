@@ -87,3 +87,19 @@ fun cleanTitle(raw: String): String {
     t = t.replace(Regex("\\s+(chord|chords|lirik)$", RegexOption.IGNORE_CASE), "")
     return t.trim().ifEmpty { raw.trim() }
 }
+
+/**
+ * Android 15+ menggambar aplikasi sampai ke balik status bar & navigasi (edge-to-edge).
+ * Beri jarak sesuai tinggi status bar, tombol navigasi, notch, dan keyboard.
+ */
+fun View.fitSystemBars() {
+    androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(this) { v, insets ->
+        val t = androidx.core.view.WindowInsetsCompat.Type.systemBars() or
+            androidx.core.view.WindowInsetsCompat.Type.displayCutout() or
+            androidx.core.view.WindowInsetsCompat.Type.ime()
+        val b = insets.getInsets(t)
+        v.setPadding(b.left, b.top, b.right, b.bottom)
+        androidx.core.view.WindowInsetsCompat.CONSUMED
+    }
+    androidx.core.view.ViewCompat.requestApplyInsets(this)
+}

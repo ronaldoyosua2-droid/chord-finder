@@ -86,7 +86,8 @@ class SongActivity : AppCompatActivity() {
                 source = intent.getStringExtra(EXTRA_SOURCE) ?: "",
             )
         }
-        setContentView(buildUi())
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        setContentView(buildUi().apply { fitSystemBars() })
         reparse()
     }
 

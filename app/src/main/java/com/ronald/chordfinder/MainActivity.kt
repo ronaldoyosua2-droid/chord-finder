@@ -64,7 +64,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(buildUi())
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        setContentView(buildUi().apply { fitSystemBars() })
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when {
