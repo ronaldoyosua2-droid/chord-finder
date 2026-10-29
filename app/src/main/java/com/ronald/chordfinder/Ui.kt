@@ -24,6 +24,8 @@ object C {
     val STAR = Color.parseColor("#F5B342")
     val MOD = Color.parseColor("#FF8FA3")
     val YT = Color.parseColor("#FF3B3B")
+    val NOTE = Color.parseColor("#8FC7FF")
+    val GO = Color.parseColor("#7BE495")
 }
 
 fun Context.dp(v: Int) = (v * resources.displayMetrics.density).toInt()

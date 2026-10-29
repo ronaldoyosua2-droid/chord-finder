@@ -43,7 +43,13 @@
     if (ps > preScore) { preScore = ps; preBest = pt; }
   }
   if (preBest && preScore >= 3 && preScore >= bestScore * 0.6) { best = preBest; bestScore = preScore; }
+  // Tempo & birama dari seluruh halaman (mis. JRChord: "Tempo : 72", "4/4")
+  var page = (document.body && document.body.innerText) || '';
+  var tm = page.match(/(?:tempo|bpm)\s*[:=]?\s*(\d{2,3})|(\d{2,3})\s*bpm/i);
+  var bpm = tm ? parseInt(tm[1] || tm[2], 10) : 0;
+  var sm = page.match(/(?:^|\n)\s*(?:time|birama|ketukan|sukat)?\s*[:=]?\s*(2|3|4|6|12)\s*\/\s*(4|8)\s*(?:\n|$)/i);
+  var sig = sm ? (sm[1] + '/' + sm[2]) : '';
   var h1 = document.querySelector('h1');
   var title = (h1 && h1.innerText.trim()) || document.title || '';
-  return JSON.stringify({ title: title, pageTitle: document.title || '', text: best || '', score: bestScore, url: location.href });
+  return JSON.stringify({ title: title, pageTitle: document.title || '', text: best || '', score: bestScore, url: location.href, bpm: bpm, sig: sig });
 })();

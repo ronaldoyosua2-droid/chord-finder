@@ -43,7 +43,7 @@ object SongParser {
 
     fun parse(raw: String): List<Line> {
         val out = ArrayList<Line>()
-        for (rawLine in normalize(raw).split('\n')) {
+        for (rawLine in joinKeyLabels(normalize(raw).split('\n'))) {
             val expanded = expandChordPro(rawLine)
             if (expanded != null) {
                 out.add(expanded.first)
@@ -67,11 +67,44 @@ object SongParser {
         for (l in out) {
             // "Do = A" / "Key: A" di awal lagu sudah ditampilkan di kepala lagu
             if (l is Line.KeyChange && l.target != null && cleaned.none { it is Line.Lyric || it is Line.Chords }) continue
+            // "Tempo : 72" / "4/4" di awal lagu dipakai metronom, tidak perlu tampil
+            if (l is Line.Lyric && cleaned.none { it is Line.Chords } && TEMPO_LINE.matches(l.text)) continue
             if (l is Line.Blank && (cleaned.isEmpty() || cleaned.last() is Line.Blank)) continue
             cleaned.add(l)
         }
         while (cleaned.isNotEmpty() && cleaned.last() is Line.Blank) cleaned.removeAt(cleaned.size - 1)
+        // "[Chorus]" lalu "Key: A" -> penanda modulasi tampil di atas label bagian
+        for (i in 1 until cleaned.size) {
+            if (cleaned[i] is Line.KeyChange && cleaned[i - 1] is Line.Section) {
+                val t = cleaned[i]; cleaned[i] = cleaned[i - 1]; cleaned[i - 1] = t
+            }
+        }
         return cleaned
+    }
+
+    private val TEMPO_LINE = Regex("(?i)^\\s*(?:(?:tempo|bpm)\\s*[:=]?\\s*\\d{2,3}(?:\\s*bpm)?|\\d{2,3}\\s*bpm|(?:time|birama)?\\s*[:=]?\\s*(?:2|3|4|6|12)\\s*/\\s*(?:4|8))\\s*$")
+    private val KEY_LABEL_ONLY = Regex("(?i)^\\s*(key|kunci|nada\\s*dasar|do|base\\s*key)\\s*[:=]\\s*$")
+
+    /** "Key:" lalu "A" di baris berikutnya (teks halaman terpisah) -> "Key: A". */
+    fun joinKeyLabels(src: List<String>): List<String> {
+        val out = ArrayList<String>(src.size)
+        var i = 0
+        while (i < src.size) {
+            val l = src[i]
+            if (KEY_LABEL_ONLY.matches(l)) {
+                var j = i + 1
+                while (j < src.size && src[j].isBlank()) j++
+                val next = src.getOrNull(j)?.trim()
+                if (next != null && Regex("^[A-G][#b]?m?$").matches(next)) {
+                    out.add(l.trim() + " " + next)
+                    i = j + 1
+                    continue
+                }
+            }
+            out.add(l)
+            i++
+        }
+        return out
     }
 
     /**
@@ -105,6 +138,8 @@ object SongParser {
 
     fun classify(line: String): Line {
         if (line.isBlank()) return Line.Blank
+        // "Key: A" / "Kunci: G" jangan dianggap baris chord
+        if (KeyDetector.explicit(line) != null) modulation(line)?.let { return it }
         chordItems(line)?.let { return Line.Chords(it) }
         modulation(line)?.let { return it }
         if (SECTION_LINE.matches(line)) return Line.Section(line.trim())
@@ -226,14 +261,19 @@ object KeyDetector {
 
     fun detect(raw: String, lines: List<Line>): Result? {
         explicit(raw)?.let { return Result(it, true) }
-        val chords = SongParser.allChords(lines)
+        // Tebak hanya dari chord sebelum modulasi pertama
+        val firstMod = lines.indexOfFirst { it is Line.KeyChange }
+        val before = if (firstMod > 0) SongParser.allChords(lines.subList(0, firstMod)) else emptyList()
+        val chords = if (before.size >= 3) before else SongParser.allChords(lines)
         if (chords.isEmpty()) return null
         return Result(infer(chords), false)
     }
 
     fun explicit(raw: String): Int? {
-        val head = raw.lines().take(20)
+        val head = SongParser.joinKeyLabels(SongParser.normalize(raw).lines()).take(20)
         for (l in head) {
+            // Setelah chord pertama, "Key: X" adalah modulasi, bukan kunci awal
+            if (EXPLICIT.find(l) == null && SongParser.chordItems(l) != null) return null
             val m = EXPLICIT.find(l) ?: continue
             // "Do = G" butuh pemisah agar kata "do" di lirik tidak tertangkap
             val label = m.value.substringBefore(m.groupValues[1]).trim()
@@ -270,6 +310,7 @@ object KeyDetector {
             11 -> Quality.DIM
             else -> null
         }
+        if (q == Quality.AUG) return if (d == 0 || d == 7) 0.3 else 0.0
         return when {
             expected == null -> when (d) { 10 -> 0.2; else -> -1.0 } // b7 cukup umum
             q == Quality.NEUTRAL -> 0.8
@@ -368,11 +409,17 @@ object Modulation {
 enum class NumberMode { INLINE, BELOW, OFF }
 
 data class Span(val start: Int, val end: Int, val kind: Kind) {
-    enum class Kind { CHORD, NUMBER, SECTION, LABEL, MODULATION }
+    enum class Kind { CHORD, NUMBER, SECTION, LABEL, MODULATION, NOTE }
 }
 
-/** @param src indeks baris asal di daftar Line (untuk tekan-lama atur modulasi) */
-data class RenderedLine(val text: String, val spans: List<Span>, val src: Int = -1)
+/**
+ * @param src indeks baris asal di daftar Line (untuk tekan-lama)
+ * @param note indeks catatan di baris [src], atau -1 kalau bukan baris catatan
+ */
+data class RenderedLine(val text: String, val spans: List<Span>, val src: Int = -1, val note: Int = -1)
+
+/** Catatan pribadi di bawah sebuah baris: jembatan chord ([bridge] = true) atau teks bebas. */
+data class Note(val bridge: Boolean, val text: String)
 
 object Renderer {
 
@@ -383,21 +430,69 @@ object Renderer {
     fun render(
         lines: List<Line>, keyPc: Int, transpose: Int, mode: NumberMode,
         manual: Map<Int, Int> = emptyMap(),
+        notes: Map<Int, List<Note>> = emptyMap(),
     ): List<RenderedLine> {
         val keys = Modulation.keys(lines, keyPc, manual)
         val out = ArrayList<RenderedLine>()
         for ((i, l) in lines.withIndex()) {
-            val key = keys[i]
+            renderLine(out, lines, i, l, keys[i], transpose, mode, manual)
+            notes[i]?.forEachIndexed { n, note ->
+                out.add(renderNote(note, keys[i], transpose, mode).copy(src = i, note = n))
+            }
+        }
+        return out
+    }
+
+    private val BRIDGE_SPLIT = Regex("\\s*(?:→|->|>|,|\\s)\\s*")
+
+    /** "G/B C#dim" -> "✎ G/B(5/7) → C#dim(#1°)" */
+    fun renderNote(note: Note, key: Int, transpose: Int, mode: NumberMode): RenderedLine {
+        val sb = StringBuilder()
+        val spans = ArrayList<Span>()
+        if (!note.bridge) {
+            val t = "📝 " + note.text.trim()
+            return RenderedLine(t, listOf(Span(0, t.length, Span.Kind.NOTE)))
+        }
+        val flats = Notes.useFlats(Notes.mod12(key + transpose))
+        sb.append("✎ ")
+        spans.add(Span(0, sb.length, Span.Kind.NOTE))
+        val toks = note.text.trim().split(BRIDGE_SPLIT).filter { it.isNotBlank() }
+        toks.forEachIndexed { n, tok ->
+            if (n > 0) {
+                val s0 = sb.length; sb.append(" → "); spans.add(Span(s0, sb.length, Span.Kind.LABEL))
+            }
+            val c = Chord.parse(tok)
+            if (c == null) {
+                val s0 = sb.length; sb.append(tok); spans.add(Span(s0, sb.length, Span.Kind.NOTE))
+            } else {
+                val s0 = sb.length
+                sb.append(c.transpose(transpose).format(flats))
+                spans.add(Span(s0, sb.length, Span.Kind.CHORD))
+                if (mode != NumberMode.OFF) {
+                    val s1 = sb.length
+                    sb.append('(').append(c.number(key)).append(')')
+                    spans.add(Span(s1, sb.length, Span.Kind.NUMBER))
+                }
+            }
+        }
+        return RenderedLine(sb.toString(), spans)
+    }
+
+    private fun renderLine(
+        out: MutableList<RenderedLine>, lines: List<Line>, i: Int, l: Line, key: Int,
+        transpose: Int, mode: NumberMode, manual: Map<Int, Int>,
+    ) {
+        run {
             val flats = Notes.useFlats(Notes.mod12(key + transpose))
             // Penanda modulasi (dari teks atau manual)
             if (Modulation.isChangeAt(lines, manual, i)) {
                 val txt = "── Modulasi → Do = ${Notes.keyName(key + transpose)} ──"
                 out.add(RenderedLine(txt, listOf(Span(0, txt.length, Span.Kind.MODULATION)), i))
-                if (l is Line.KeyChange) continue
+                if (l is Line.KeyChange) return
             } else if (l is Line.KeyChange) {
                 // penanda yang diabaikan: tampilkan teks aslinya saja
                 out.add(RenderedLine(l.text, listOf(Span(0, l.text.length, Span.Kind.LABEL)), i))
-                continue
+                return
             }
             when (l) {
                 is Line.Blank -> out.add(RenderedLine("", emptyList(), i))
@@ -407,7 +502,6 @@ object Renderer {
                 is Line.KeyChange -> {}
             }
         }
-        return out
     }
 
     private fun renderChords(

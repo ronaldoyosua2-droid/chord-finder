@@ -1,7 +1,10 @@
 package com.ronald.chordfinder
 
 import android.content.Context
+import com.ronald.chordfinder.music.Note
+import com.ronald.chordfinder.music.SeqItem
 import com.ronald.chordfinder.music.SongParser
+import com.ronald.chordfinder.music.Step
 import com.ronald.chordfinder.music.TextSearch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -27,6 +30,17 @@ data class Song(
     var ytId: String = "",
     var ytTitle: String = "",
     var ytChannel: String = "",
+    /** Catatan lagu (tampil di atas) */
+    var songNote: String = "",
+    /** Jembatan chord & catatan per baris: indeks baris -> daftar catatan */
+    var notes: MutableMap<Int, MutableList<Note>> = HashMap(),
+    // Metronom (0 = belum diatur)
+    var bpm: Int = 0,
+    var sigBeats: Int = 0,
+    var sigUnit: Int = 4,
+    var pattern: String = "",          // mis. "ANNN" (A = aksen, N = biasa, M = diam)
+    var seq: MutableList<SeqItem> = ArrayList(),
+    var useSeq: Boolean = false,
 ) {
     @Transient private var index: String? = null
 
@@ -43,6 +57,30 @@ data class Song(
         put("mods", JSONObject().apply { mods.forEach { (k, v) -> put(k.toString(), v) } })
         put("modDismissed", JSONArray().apply { modDismissed.forEach { put(it) } })
         put("ytId", ytId); put("ytTitle", ytTitle); put("ytChannel", ytChannel)
+        put("songNote", songNote)
+        put("notes", JSONObject().apply {
+            notes.forEach { (k, list) ->
+                put(k.toString(), JSONArray().apply {
+                    list.forEach { n -> put(JSONObject().put("b", n.bridge).put("t", n.text)) }
+                })
+            }
+        })
+        put("bpm", bpm); put("sigBeats", sigBeats); put("sigUnit", sigUnit); put("pattern", pattern)
+        put("seq", JSONArray().apply {
+            seq.forEach { put(JSONObject().put("n", it.name).put("b", it.bars).put("c", it.cue).put("l", it.line)) }
+        })
+        put("useSeq", useSeq)
+    }
+
+    fun stepPattern(beats: Int): List<Step> = List(beats) { i ->
+        when (pattern.getOrNull(i)) {
+            'A' -> Step.ACCENT; 'M' -> Step.MUTE; 'N' -> Step.NORMAL
+            else -> if (i == 0) Step.ACCENT else Step.NORMAL
+        }
+    }
+
+    fun setStepPattern(p: List<Step>) {
+        pattern = p.joinToString("") { when (it) { Step.ACCENT -> "A"; Step.MUTE -> "M"; Step.NORMAL -> "N" } }
     }
 
     companion object {
@@ -65,6 +103,30 @@ data class Song(
             ytId = o.optString("ytId"),
             ytTitle = o.optString("ytTitle"),
             ytChannel = o.optString("ytChannel"),
+            songNote = o.optString("songNote"),
+            notes = HashMap<Int, MutableList<Note>>().apply {
+                o.optJSONObject("notes")?.let { m ->
+                    m.keys().forEach { k ->
+                        val a = m.getJSONArray(k)
+                        put(k.toInt(), MutableList(a.length()) { i ->
+                            val n = a.getJSONObject(i); Note(n.optBoolean("b"), n.optString("t"))
+                        })
+                    }
+                }
+            },
+            bpm = o.optInt("bpm", 0),
+            sigBeats = o.optInt("sigBeats", 0),
+            sigUnit = o.optInt("sigUnit", 4),
+            pattern = o.optString("pattern"),
+            seq = ArrayList<SeqItem>().apply {
+                o.optJSONArray("seq")?.let { a ->
+                    for (i in 0 until a.length()) {
+                        val x = a.getJSONObject(i)
+                        add(SeqItem(x.optString("n"), x.optInt("b", 4), x.optString("c"), x.optInt("l", -1)))
+                    }
+                }
+            },
+            useSeq = o.optBoolean("useSeq", false),
         )
     }
 }
@@ -132,5 +194,18 @@ object Prefs {
     fun fontSize(ctx: Context) = sp(ctx).getFloat("font", 15f)
     fun setFontSize(ctx: Context, v: Float) = sp(ctx).edit().putFloat("font", v).apply()
     fun source(ctx: Context) = sp(ctx).getInt("source", 0)
+    // Metronom (pengaturan umum, berlaku untuk semua lagu)
+    fun sound(ctx: Context) = sp(ctx).getString("mSound", "kayu")!!
+    fun setSound(ctx: Context, v: String) = sp(ctx).edit().putString("mSound", v).apply()
+    fun voice(ctx: Context) = sp(ctx).getString("mVoice", "A")!!
+    fun setVoice(ctx: Context, v: String) = sp(ctx).edit().putString("mVoice", v).apply()
+    fun countIn(ctx: Context) = sp(ctx).getBoolean("mCount", true)
+    fun setCountIn(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean("mCount", v).apply()
+    fun cues(ctx: Context) = sp(ctx).getBoolean("mCues", true)
+    fun setCues(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean("mCues", v).apply()
+    fun subdivision(ctx: Context) = sp(ctx).getInt("mSub", 1)
+    fun setSubdivision(ctx: Context, v: Int) = sp(ctx).edit().putInt("mSub", v).apply()
+    fun followScroll(ctx: Context) = sp(ctx).getBoolean("mFollow", true)
+    fun setFollowScroll(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean("mFollow", v).apply()
     fun setSource(ctx: Context, v: Int) = sp(ctx).edit().putInt("source", v).apply()
 }

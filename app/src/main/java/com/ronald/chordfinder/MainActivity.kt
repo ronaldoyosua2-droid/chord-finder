@@ -341,6 +341,8 @@ class MainActivity : AppCompatActivity() {
             i.putExtra(SongActivity.EXTRA_TEXT, f.optString("text"))
             i.putExtra(SongActivity.EXTRA_SOURCE, url)
             i.putExtra(SongActivity.EXTRA_QUERY, cleanTitle(f.optString("pageTitle")))
+            i.putExtra(SongActivity.EXTRA_BPM, f.optInt("bpm", 0))
+            i.putExtra(SongActivity.EXTRA_SIG, f.optString("sig"))
         }
         startActivity(i)
     }

@@ -1,4 +1,6 @@
 Do = C
+Tempo : 76
+4/4
 
 Intro :
 | C   G/B  | Am   F   | Dm   G   | C   |
@@ -14,7 +16,7 @@ Fm          G
 Ku ikut jalan-Mu
 
 Reff :
-F        G          Em      Am
+F        G          Em      C#dim
 Kaulah terang di tiap hari
 Dm         G            C    C7
 Tak ku sendiri melangkah

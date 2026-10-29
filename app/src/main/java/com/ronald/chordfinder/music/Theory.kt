@@ -41,10 +41,16 @@ object Notes {
         6 -> "#4"; 7 -> "5"; 8 -> "b6"; 9 -> "6"; 10 -> "b7"; else -> "7"
     }
 
+    /** Sama seperti [degree] tapi nada di luar tangga ditulis dengan # (untuk chord diminished). */
+    fun degreeSharp(notePc: Int, keyPc: Int): String = when (mod12(notePc - keyPc)) {
+        0 -> "1"; 1 -> "#1"; 2 -> "2"; 3 -> "#2"; 4 -> "3"; 5 -> "4"
+        6 -> "#4"; 7 -> "5"; 8 -> "#5"; 9 -> "6"; 10 -> "#6"; else -> "7"
+    }
+
     fun mod12(x: Int) = ((x % 12) + 12) % 12
 }
 
-enum class Quality { MAJOR, MINOR, DIM, NEUTRAL }
+enum class Quality { MAJOR, MINOR, DIM, AUG, NEUTRAL }
 
 data class Chord(val root: Int, val suffix: String, val bass: Int?) {
 
@@ -54,6 +60,7 @@ data class Chord(val root: Int, val suffix: String, val bass: Int?) {
             return when {
                 s.startsWith("dim") || s.startsWith("°") || s.startsWith("ø") -> Quality.DIM
                 (s.startsWith("m7b5") || s.startsWith("m7-5") || s.startsWith("m(b5)")) -> Quality.DIM
+                s.startsWith("aug") || s.startsWith("+") || s.startsWith("(#5)") || s == "#5" -> Quality.AUG
                 s.startsWith("m") && !s.startsWith("maj") -> Quality.MINOR
                 s.startsWith("min") -> Quality.MINOR
                 s.startsWith("sus") || s == "5" -> Quality.NEUTRAL
@@ -87,10 +94,13 @@ data class Chord(val root: Int, val suffix: String, val bass: Int?) {
         val mark = when (quality) {
             Quality.MAJOR -> if (expected != Quality.MAJOR) "M" else ""
             Quality.MINOR -> if (expected != Quality.MINOR) "m" else ""
-            Quality.DIM -> if (expected != Quality.DIM) "dim" else ""
+            Quality.DIM -> if (expected != Quality.DIM) "°" else ""
+            Quality.AUG -> "+"
             Quality.NEUTRAL -> ""
         }
-        val r = Notes.degree(root, keyPc) + mark
+        // Diminished biasanya chord penghubung yang naik: C#dim di kunci C = #1°, bukan b2°
+        val deg = if (quality == Quality.DIM) Notes.degreeSharp(root, keyPc) else Notes.degree(root, keyPc)
+        val r = deg + mark
         return if (bass != null) r + "/" + Notes.degree(bass, keyPc) else r
     }
 
@@ -106,7 +116,9 @@ data class Chord(val root: Int, val suffix: String, val bass: Int?) {
             val main = if (slash >= 0) token.substring(0, slash) else token
             val bassStr = if (slash >= 0) token.substring(slash + 1) else null
             val m = ROOT.matchEntire(main) ?: return null
+            // Salah ketik yang sering muncul di situs chord
             val suffix = m.groupValues[3]
+                .replace(Regex("^(uag|agu|augmented)"), "aug")
             if (!SUFFIX.matches(suffix)) return null
             // Kurung harus seimbang, mis. "Asus(4)" boleh, "A(" tidak
             if (suffix.count { it == '(' } != suffix.count { it == ')' }) return null

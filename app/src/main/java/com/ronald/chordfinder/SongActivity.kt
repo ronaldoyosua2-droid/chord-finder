@@ -41,6 +41,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.ronald.chordfinder.music.KeyDetector
 import com.ronald.chordfinder.music.Line
 import com.ronald.chordfinder.music.Modulation
+import com.ronald.chordfinder.music.Note
 import com.ronald.chordfinder.music.Notes
 import com.ronald.chordfinder.music.NumberMode
 import com.ronald.chordfinder.music.RenderedLine
@@ -56,6 +57,9 @@ class SongActivity : AppCompatActivity() {
         const val EXTRA_TEXT = "text"
         const val EXTRA_SOURCE = "source"
         const val EXTRA_QUERY = "query"
+        const val EXTRA_BPM = "bpm"
+        const val EXTRA_SIG = "sig"
+        private const val REQ_MIC = 7
         private val SPEEDS = intArrayOf(1, 2, 3, 4, 6)
     }
 
@@ -94,6 +98,11 @@ class SongActivity : AppCompatActivity() {
     private lateinit var modBanner: LinearLayout
     private lateinit var modText: TextView
 
+    // Catatan & metronom
+    private lateinit var songNoteView: TextView
+    private lateinit var metro: MetroUi
+    private var micGranted: (() -> Unit)? = null
+
     private val handler = Handler(Looper.getMainLooper())
     private var scrolling = false
     private var speedIdx = 1
@@ -124,9 +133,19 @@ class SongActivity : AppCompatActivity() {
                 query = intent.getStringExtra(EXTRA_QUERY) ?: "",
             )
         }
+        metro = MetroUi(this, object : MetroHost {
+            override val song get() = this@SongActivity.song
+            override val lines get() = this@SongActivity.lines
+            override val manualMods get() = this@SongActivity.song.mods
+            override fun persist() = persistIfSaved()
+            override fun scrollToLine(src: Int) = this@SongActivity.scrollToLine(src)
+            override fun requestMic(granted: () -> Unit) = this@SongActivity.requestMic(granted)
+        })
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(buildUi().apply { fitSystemBars() })
         reparse()
+        metro.initFrom(intent.getIntExtra(EXTRA_BPM, 0), intent.getStringExtra(EXTRA_SIG) ?: "")
+        updateSongNote()
         updateYtCard()
         if (song.ytId.isEmpty()) autoSearch()
     }
@@ -138,6 +157,7 @@ class SongActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        metro.release()
         player?.destroy()
         super.onDestroy()
     }
@@ -180,7 +200,16 @@ class SongActivity : AppCompatActivity() {
 
         root.addView(buildYtCard())
         root.addView(buildPlayer())
+        root.addView(metro.buildBeatBar())
         root.addView(buildModBanner())
+        songNoteView = label("", 13.5f, C.TEXT).apply {
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            background = rounded(0x148FC7FF, dpf(12f), dp(1), 0x558FC7FF)
+            visibility = View.GONE
+            setOnClickListener { songNoteDialog() }
+            layoutParams = lp(MATCH, WRAP).apply { setMargins(dp(12), 0, dp(12), dp(8)) }
+        }
+        root.addView(songNoteView)
 
         // Isi chord (gulir dua arah supaya baris panjang tidak patah dan tetap sejajar)
         scroll = ScrollView(this).apply { isFillViewport = true }
@@ -201,7 +230,10 @@ class SongActivity : AppCompatActivity() {
         }
         body.setOnClickListener { if (scrolling) setScrolling(false) }
         body.setOnLongClickListener { lineMenu(); true }
-        root.addView(scroll, lp(MATCH, 0, 1f))
+        val chordFrame = FrameLayout(this)
+        chordFrame.addView(scroll, FrameLayout.LayoutParams(MATCH, MATCH))
+        chordFrame.addView(metro.buildOverlay(), FrameLayout.LayoutParams(MATCH, MATCH))
+        root.addView(chordFrame, lp(MATCH, 0, 1f))
 
         // Panel kontrol bawah
         val panel = vbox().apply {
@@ -233,6 +265,7 @@ class SongActivity : AppCompatActivity() {
             Toast.makeText(this, "Kecepatan scroll: ${speedIdx + 1}x", Toast.LENGTH_SHORT).show()
             true
         }
+        row2.addView(metro.buildButton(), lp(WRAP, WRAP).apply { leftMargin = dp(5) })
         row2.addView(playBtn, lp(WRAP, WRAP).apply { leftMargin = dp(5) })
         row2.addView(View(this), lp(0, 1, 1f))
         saveBtn = small(pill("Simpan") { if (!saved) save() })
@@ -297,7 +330,7 @@ class SongActivity : AppCompatActivity() {
         sb.append("\n\n")
         renderedOffset = 2
 
-        rendered = Renderer.render(lines, song.key, song.transpose, mode(), song.mods)
+        rendered = Renderer.render(lines, song.key, song.transpose, mode(), song.mods, song.notes)
         if (rendered.none { it.spans.any { s -> s.kind == Span.Kind.CHORD } }) {
             sb.append("(Tidak ada chord yang terbaca di teks ini.)\n\n", ForegroundColorSpan(C.MUTED), 0)
             renderedOffset += 2
@@ -326,6 +359,10 @@ class SongActivity : AppCompatActivity() {
                         sb.setSpan(StyleSpan(Typeface.BOLD), a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     }
                     Span.Kind.LABEL -> sb.setSpan(ForegroundColorSpan(C.MUTED), a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    Span.Kind.NOTE -> {
+                        sb.setSpan(ForegroundColorSpan(C.NOTE), a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(StyleSpan(Typeface.BOLD), a, b, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
                 }
             }
             sb.append('\n')
@@ -375,13 +412,50 @@ class SongActivity : AppCompatActivity() {
         render()
     }
 
-    /** Tekan lama pada baris: atur modulasi mulai dari baris itu. */
-    private fun lineMenu() {
-        val layout = body.layout ?: return
+    /** Baris yang ditekan lama: indeks di [rendered], atau null. */
+    private fun touchedLine(): RenderedLine? {
+        val layout = body.layout ?: return null
         val line = layout.getLineForVertical((lastTouchY - body.totalPaddingTop).toInt())
-        val r = rendered.getOrNull(line - renderedOffset) ?: return
+        return rendered.getOrNull(line - renderedOffset)
+    }
+
+    /** Tekan lama pada baris: jembatan chord, catatan, atau modulasi. */
+    private fun lineMenu() {
+        val r = touchedLine() ?: return
         val src = r.src
         if (src < 0) return
+        if (r.note >= 0) {
+            val note = song.notes[src]?.getOrNull(r.note) ?: return
+            AlertDialog.Builder(this)
+                .setTitle(if (note.bridge) "Jembatan chord" else "Catatan")
+                .setItems(arrayOf("✎ Edit", "✕ Hapus")) { _, w ->
+                    if (w == 0) {
+                        if (note.bridge) bridgeDialog(src, r.note) else noteDialog(src, r.note)
+                    } else {
+                        song.notes[src]?.removeAt(r.note)
+                        if (song.notes[src].isNullOrEmpty()) song.notes.remove(src)
+                        persistIfSaved(); render()
+                    }
+                }.show()
+            return
+        }
+        val preview = r.text.trim().take(40)
+        AlertDialog.Builder(this)
+            .setTitle(preview.ifEmpty { "Baris ini" })
+            .setItems(arrayOf(
+                "✎  Tambah jembatan chord\n     chord penghubung sesudah baris ini",
+                "📝  Tambah catatan\n     mis. \"intro 2x\", \"masuk drum\"",
+                "⤴  Modulasi mulai di sini\n     pilih Do baru",
+            )) { _, w ->
+                when (w) {
+                    0 -> bridgeDialog(src, -1)
+                    1 -> noteDialog(src, -1)
+                    2 -> modulationDialog(src)
+                }
+            }.show()
+    }
+
+    private fun modulationDialog(src: Int) {
         val keys = Modulation.keys(lines, song.key, song.mods)
         val cur = keys[src]
         val hasChange = Modulation.isChangeAt(lines, song.mods, src)
@@ -401,11 +475,169 @@ class SongActivity : AppCompatActivity() {
                 } else {
                     song.mods[src] = Notes.mod12(song.key + which)
                 }
+                song.seq.clear()
                 persistIfSaved()
                 render()
             }
             .setNegativeButton("Batal", null)
             .show()
+    }
+
+    /** Do (kunci asli) yang berlaku di baris [src]. */
+    private fun keyAt(src: Int) = Modulation.keys(lines, song.key, song.mods).getOrElse(src) { song.key }
+
+    private fun bridgeDialog(src: Int, editIndex: Int) {
+        val key = keyAt(src)
+        val existing = if (editIndex >= 0) song.notes[src]?.getOrNull(editIndex)?.text.orEmpty() else ""
+        val box = vbox().apply { setPadding(dp(18), dp(6), dp(18), 0) }
+        box.addView(label("Sesudah: " + (rendered.firstOrNull { it.src == src && it.note < 0 }?.text?.trim()?.take(36) ?: ""),
+            12f, C.MUTED).apply { typeface = Typeface.MONOSPACE })
+        val input = EditText(this).apply {
+            setText(existing)
+            hint = "mis. G/B C#dim"
+            setSingleLine()
+            typeface = Typeface.MONOSPACE
+            setTextColor(C.TEXT); setHintTextColor(C.MUTED)
+            background = rounded(C.BG, dpf(12f), dp(1), C.NOTE)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        box.addView(input, lp(MATCH, WRAP).apply { topMargin = dp(8) })
+        box.addView(label("Cepat ketik:", 12f, C.MUTED).apply { setPadding(0, dp(8), 0, dp(4)) })
+        // Chord bawaan Do yang berlaku + chord penghubung yang sering dipakai (ditulis sesuai transpose)
+        val shown = Notes.mod12(key + song.transpose)
+        val flats = Notes.useFlats(shown)
+        fun n(semi: Int) = Notes.name(shown + semi, flats)
+        val quick = listOf(n(0), n(2) + "m", n(4) + "m", n(5), n(7), n(9) + "m", n(7) + "/" + n(11),
+            n(4) + "/" + n(8), Notes.name(shown + 1, false) + "dim", n(10), "→")
+        val chipRow = hbox()
+        val preview = label("", 13.5f, C.TEXT).apply {
+            typeface = Typeface.MONOSPACE
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = rounded(C.BG, dpf(12f))
+        }
+        fun updatePreview() {
+            // Teks diketik dalam kunci yang tampil (sudah ditranspose) -> simpan dalam kunci asli
+            val rl = Renderer.renderNote(Note(true, untranspose(input.text.toString())), key, song.transpose, mode())
+            val sb = SpannableStringBuilder(rl.text)
+            for (sp in rl.spans) {
+                val col = when (sp.kind) { Span.Kind.CHORD -> C.CHORD; Span.Kind.NUMBER -> C.NUMBER; Span.Kind.NOTE -> C.NOTE; else -> C.MUTED }
+                sb.setSpan(ForegroundColorSpan(col), sp.start, sp.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            preview.text = sb
+        }
+        for (q in quick) {
+            chipRow.addView(small(pill(q) {
+                val t = input.text.toString().trimEnd()
+                input.setText(if (t.isEmpty()) q else "$t $q")
+                input.setSelection(input.text.length)
+            }), lp(WRAP, WRAP).apply { rightMargin = dp(5) })
+        }
+        box.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(chipRow) })
+        box.addView(label("Pratinjau:", 12f, C.MUTED).apply { setPadding(0, dp(8), 0, dp(4)) })
+        box.addView(preview, lp(MATCH, WRAP))
+        input.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun afterTextChanged(e: android.text.Editable?) = updatePreview()
+        })
+        updatePreview()
+        AlertDialog.Builder(this)
+            .setTitle("Jembatan chord")
+            .setView(box)
+            .setPositiveButton("Simpan") { _, _ ->
+                val t = untranspose(input.text.toString().trim())
+                if (t.isBlank()) return@setPositiveButton
+                val list = song.notes.getOrPut(src) { ArrayList() }
+                if (editIndex >= 0 && editIndex < list.size) list[editIndex] = Note(true, t) else list.add(Note(true, t))
+                persistIfSaved(); render()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
+
+    /** Chord yang diketik sesuai tampilan (sudah ditranspose) dikembalikan ke kunci asli lagu. */
+    private fun untranspose(text: String): String {
+        if (song.transpose == 0) return text
+        return text.split(Regex("(?<=\\s)|(?=\\s)")).joinToString("") { tok ->
+            val c = com.ronald.chordfinder.music.Chord.parse(tok)
+            c?.transpose(-song.transpose)?.format(Notes.useFlats(song.key)) ?: tok
+        }
+    }
+
+    private fun noteDialog(src: Int, editIndex: Int) {
+        val existing = if (editIndex >= 0) song.notes[src]?.getOrNull(editIndex)?.text.orEmpty() else ""
+        val input = EditText(this).apply {
+            setText(existing)
+            hint = "mis. masuk drum, naik dinamika"
+            setTextColor(C.TEXT); setHintTextColor(C.MUTED)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Catatan")
+            .setView(LinearLayout(this).apply { setPadding(dp(20), dp(8), dp(20), 0); addView(input, lp(MATCH, WRAP)) })
+            .setPositiveButton("Simpan") { _, _ ->
+                val t = input.text.toString().trim()
+                if (t.isBlank()) return@setPositiveButton
+                val list = song.notes.getOrPut(src) { ArrayList() }
+                if (editIndex >= 0 && editIndex < list.size) list[editIndex] = Note(false, t) else list.add(Note(false, t))
+                persistIfSaved(); render()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
+
+    private fun updateSongNote() {
+        if (song.songNote.isBlank()) { songNoteView.visibility = View.GONE; return }
+        val sb = SpannableStringBuilder()
+        sb.append("📝 CATATAN LAGU\n", ForegroundColorSpan(C.NOTE), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        sb.setSpan(StyleSpan(Typeface.BOLD), 0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        sb.setSpan(RelativeSizeSpan(0.8f), 0, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        sb.append(song.songNote)
+        songNoteView.text = sb
+        songNoteView.visibility = View.VISIBLE
+    }
+
+    private fun songNoteDialog() {
+        val input = EditText(this).apply {
+            setText(song.songNote)
+            hint = "mis. Intro 2x · Reff terakhir ulang 2x, pelan"
+            minLines = 2
+            setTextColor(C.TEXT); setHintTextColor(C.MUTED)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Catatan lagu")
+            .setView(LinearLayout(this).apply { setPadding(dp(20), dp(8), dp(20), 0); addView(input, lp(MATCH, WRAP)) })
+            .setPositiveButton("Simpan") { _, _ ->
+                song.songNote = input.text.toString().trim()
+                persistIfSaved(); updateSongNote()
+            }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
+
+    /** Gulir ke baris lagu [src] (dipakai metronom saat pindah bagian). */
+    private fun scrollToLine(src: Int) {
+        val idx = rendered.indexOfFirst { it.src >= src }
+        val layout = body.layout ?: return
+        if (idx < 0) return
+        val line = (renderedOffset + idx).coerceAtMost(layout.lineCount - 1)
+        val y = layout.getLineTop(line) + body.totalPaddingTop - dp(6)
+        scroll.smoothScrollTo(0, y.coerceAtLeast(0))
+    }
+
+    private fun requestMic(granted: () -> Unit) {
+        if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            granted(); return
+        }
+        micGranted = granted
+        requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), REQ_MIC)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != REQ_MIC) return
+        if (grantResults.firstOrNull() == android.content.pm.PackageManager.PERMISSION_GRANTED) micGranted?.invoke()
+        else Toast.makeText(this, "Izin mikrofon dibutuhkan untuk deteksi tempo. Bisa pakai Tap tempo.", Toast.LENGTH_LONG).show()
+        micGranted = null
     }
 
     // --------------------------------------------------------- YouTube
@@ -808,9 +1040,11 @@ class SongActivity : AppCompatActivity() {
             .setPositiveButton("Simpan") { _, _ ->
                 song.raw = input.text.toString()
                 song.key = -1
-                // Nomor baris berubah: modulasi manual direset
+                // Nomor baris berubah: modulasi manual, catatan per baris, dan urutan direset
                 song.mods.clear()
                 song.modDismissed.clear()
+                song.notes.clear()
+                song.seq.clear()
                 persistIfSaved()
                 reparse()
             }
@@ -824,6 +1058,8 @@ class SongActivity : AppCompatActivity() {
         pm.menu.add(0, 2, 1, "Edit teks chord")
         pm.menu.add(0, 3, 2, "Ganti judul")
         pm.menu.add(0, 6, 3, "Pilih video YouTube")
+        pm.menu.add(0, 7, 3, "Catatan lagu")
+        pm.menu.add(0, 8, 3, "Metronom")
         pm.menu.add(0, 5, 4, "Bagikan teks")
         if (saved) pm.menu.add(0, 4, 5, "Hapus dari koleksi")
         pm.setOnMenuItemClickListener {
@@ -833,6 +1069,8 @@ class SongActivity : AppCompatActivity() {
                 3 -> renameDialog()
                 5 -> share()
                 6 -> pickerDialog()
+                7 -> songNoteDialog()
+                8 -> metro.openSheet()
                 4 -> AlertDialog.Builder(this)
                     .setMessage("Hapus \"${song.title}\" dari koleksi?")
                     .setPositiveButton("Hapus") { _, _ -> SongStore.delete(this, song.id); finish() }
@@ -844,9 +1082,11 @@ class SongActivity : AppCompatActivity() {
     }
 
     private fun share() {
-        val text = Renderer.render(lines, song.key, song.transpose, mode(), song.mods).joinToString("\n") { it.text }
+        val text = Renderer.render(lines, song.key, song.transpose, mode(), song.mods, song.notes).joinToString("\n") { it.text }
         val yt = if (song.ytId.isNotEmpty()) "\nYouTube: https://youtu.be/${song.ytId}" else ""
-        val full = "${song.title}\nDo = ${Notes.keyName(song.key + song.transpose)}$yt\n\n$text"
+        val tempo = if (song.bpm > 0) "\nTempo: ${song.bpm} BPM" + (if (song.sigBeats > 0) " · ${song.sigBeats}/${song.sigUnit}" else "") else ""
+        val note = if (song.songNote.isNotBlank()) "\nCatatan: ${song.songNote}" else ""
+        val full = "${song.title}\nDo = ${Notes.keyName(song.key + song.transpose)}$tempo$yt$note\n\n$text"
         startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, full)

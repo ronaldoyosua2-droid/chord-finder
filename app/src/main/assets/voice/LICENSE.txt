@@ -1,0 +1,2 @@
+Suara cue (A = af_heart, B = af_bella) dibuat dengan Kokoro-82M (hexgrad/Kokoro-82M),
+model text-to-speech berlisensi Apache License 2.0. https://huggingface.co/hexgrad/Kokoro-82M
