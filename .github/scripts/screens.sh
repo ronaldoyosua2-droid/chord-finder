@@ -78,8 +78,8 @@ tap_text "▶ Mulai"
 shot 14-hitungan 1.2
 sleep 5
 shot 15-metronom-jalan 0.5
-tap_text "■ Stop"
-shot 16-tombol-bawah 1
+adb shell input tap 956 566
+shot 16-setelah-stop 1.5
 
 # 7. Putar YouTube
 tap_text "▶ YouTube"
