@@ -575,9 +575,9 @@ class SongActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun error(code: Int) = runOnUiThread {
-            val msg = if (code == 101 || code == 150 || code == 152 || code == 153)
-                "Pemilik video tidak mengizinkan diputar di aplikasi lain. Pilih video lain atau buka di YouTube."
-            else "Video tidak bisa diputar (kode $code)."
+            val msg = "Video ini tidak bisa diputar di dalam aplikasi (kode $code). " +
+                "Biasanya karena pemilik video membatasinya, atau YouTube meminta verifikasi. " +
+                "Pilih video lain atau buka di aplikasi YouTube."
             AlertDialog.Builder(this@SongActivity)
                 .setMessage(msg)
                 .setPositiveButton("Pilih video lain") { _, _ -> pickerDialog() }
