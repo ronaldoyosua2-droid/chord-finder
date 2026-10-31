@@ -1,0 +1,315 @@
+--------- beginning of system
+10-31 08:20:49.101   542   949 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES
+10-31 08:20:49.101   542   949 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE
+--------- beginning of main
+10-31 08:20:49.103   413   621 D audioserver: logFgsApiBegin: FGS Logger Transaction failed, -129
+10-31 08:20:49.103   542  1368 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 15
+10-31 08:20:49.105   413   521 D AudioFlinger: mixer(0x7d5132d278e0) throttle end: throttle time(32)
+10-31 08:20:49.108   867   910 V WindowManagerShell: Transition requested (#19): android.os.BinderProxy@eebb1e0 TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=9 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.ronald.chordfinder/.MainActivity } baseActivity=ComponentInfo{com.ronald.chordfinder/com.ronald.chordfinder.MainActivity} topActivity=ComponentInfo{com.ronald.chordfinder/com.ronald.chordfinder.SongActivity} origActivity=null realActivity=ComponentInfo{com.ronald.chordfinder/com.ronald.chordfinder.MainActivity} numActivities=4 lastActiveTime=204083 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@dcd2c99} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{b48cb5e com.ronald.chordfinder.SongActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= falseisLetterboxEducationEnabled= false isLetterboxDoubleTapEnabled= false topActivityEligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=1080 topActivityLetterboxHeight=2400 isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false cameraCompatTaskInfo=CameraCompatTaskInfo { cameraCompatControlState=hidden freeformCameraCompatMode=inactive}}}, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 19 }
+10-31 08:20:49.108   542   949 I ActivityTaskManager: START u0 {cmp=com.ronald.chordfinder/.SongActivity (has extras)} with LAUNCH_MULTIPLE from uid 10148 (BAL_ALLOW_VISIBLE_WINDOW) result code=0
+10-31 08:20:49.113   542   568 D OomAdjuster: Not killing cached processes
+10-31 08:20:49.121   418   418 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+10-31 08:20:49.132   542   638 D ActivityManager: freezing 1039 com.android.settings
+10-31 08:20:49.133   542   638 D ActivityManager: freezing 1768 com.android.localtransport
+10-31 08:20:49.133   542   638 D ActivityManager: freezing 2074 com.android.dynsystem:dynsystem
+10-31 08:20:49.133   542   638 D ActivityManager: freezing 1585 com.android.keychain
+10-31 08:20:49.133   542   638 D ActivityManager: freezing 2046 com.android.dynsystem
+10-31 08:20:49.164  2927  2940 D EGL_emulation: app_time_stats: avg=529.24ms min=10.98ms max=7429.36ms count=15
+10-31 08:20:49.164   413   521 D AudioFlinger: mixer(0x7d5132d278e0) throttle end: throttle time(29)
+10-31 08:20:49.178   542  2456 D CoreBackPreview: Window{577ab5d u0 com.ronald.chordfinder/com.ronald.chordfinder.SongActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@9e151a3, mPriority=0, mIsAnimationCallback=false}
+10-31 08:20:49.329   413   521 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+10-31 08:20:49.331   542   565 I ActivityTaskManager: Displayed com.ronald.chordfinder/.SongActivity for user 0: +152ms
+10-31 08:20:49.331   542   565 V WindowManager: Sent Transition (#19) createdAt=10-31 08:20:49.103 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=9 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.ronald.chordfinder/.MainActivity } baseActivity=ComponentInfo{com.ronald.chordfinder/com.ronald.chordfinder.MainActivity} topActivity=ComponentInfo{com.ronald.chordfinder/com.ronald.chordfinder.SongActivity} origActivity=null realActivity=ComponentInfo{com.ronald.chordfinder/com.ronald.chordfinder.MainActivity} numActivities=4 lastActiveTime=204083 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{210da85 Task{47a4d07 #9 type=standard A=10148:com.ronald.chordfinder}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{54ad42a com.ronald.chordfinder.SongActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= falseisLetterboxEducationEnabled= false isLetterboxDoubleTapEnabled= false topActivityEligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=1080 topActivityLetterboxHeight=2400 isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false cameraCompatTaskInfo=CameraCompatTaskInfo { cameraCompatControlState=hidden freeformCameraCompatMode=inactive}}}, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 19 }
+10-31 08:20:49.331   542   565 V WindowManager:     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+10-31 08:20:49.332   542   565 V WindowManager:     info={id=19 t=OPEN f=0x0 trk=0 opt={t=CUSTOM enterResId=0 exitResId=0} r=[0@Point(0, 0)] c=[
+10-31 08:20:49.332   542   565 V WindowManager:         {null m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{7354e21 u0 com.ronald.chordfinder/.SongActivity)/@0xfd3e2cc sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) d=-1->0 r=-1->0:-1 bc=ff303030 component=com.ronald.chordfinder/.SongActivity},
+10-31 08:20:49.332   542   565 V WindowManager:         {null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{923d60e u0 com.ronald.chordfinder/.SongActivity)/@0x8ef2a7d sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SongActivity}
+10-31 08:20:49.332   542   565 V WindowManager:     ]}
+10-31 08:20:49.333   867  1747 V WindowManagerShell: onTransitionReady(transaction=2327872275556)
+10-31 08:20:49.335   542  2456 W UserManagerService: Requested status bar icon for non-badged user 0
+10-31 08:20:49.335   867   910 V WindowManagerShell: onTransitionReady (#19) android.os.BinderProxy@eebb1e0: {id=19 t=OPEN f=0x0 trk=0 opt={t=CUSTOM enterResId=0 exitResId=0} r=[0@Point(0, 0)] c=[{null m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{7354e21 u0 com.ronald.chordfinder/.SongActivity)/@0x4a96b3f sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) d=-1->0 r=-1->0:-1 bc=ff303030 component=com.ronald.chordfinder/.SongActivity},{null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{923d60e u0 com.ronald.chordfinder/.SongActivity)/@0xc8a0c0c sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SongActivity}]}
+10-31 08:20:49.335   867   910 V WindowManagerShell: Playing animation for (#19) android.os.BinderProxy@eebb1e0@0
+10-31 08:20:49.335   867   910 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultMixedHandler@6fb15a1
+10-31 08:20:49.335   867   910 V WindowManagerShell:  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@50573c6
+10-31 08:20:49.335   867   910 V WindowManagerShell:  try handler com.android.wm.shell.pip.PipTransition@dbccf87
+10-31 08:20:49.335   867   910 V WindowManagerShell:  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@a09aeb4
+10-31 08:20:49.335   867   910 V WindowManagerShell:  try handler com.android.wm.shell.recents.RecentsTransitionHandler@c926add
+10-31 08:20:49.335   867   910 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+10-31 08:20:49.335   867   910 V WindowManagerShell:  try handler com.android.wm.shell.splitscreen.StageCoordinator@ad50652
+10-31 08:20:49.335   867   910 V WindowManagerShell:  try handler com.android.wm.shell.transition.RemoteTransitionHandler@a0cdd23
+10-31 08:20:49.335   867   910 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=19 t=OPEN f=0x0 trk=0 opt={t=CUSTOM enterResId=0 exitResId=0} r=[0@Point(0, 0)] c=[{null m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{7354e21 u0 com.ronald.chordfinder/.SongActivity)/@0x4a96b3f sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) d=-1->0 r=-1->0:-1 bc=ff303030 component=com.ronald.chordfinder/.SongActivity},{null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{923d60e u0 com.ronald.chordfinder/.SongActivity)/@0xc8a0c0c sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SongActivity}]}
+10-31 08:20:49.335   867   910 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.android.launcher3/com.android.launcher3.uioverrides.QuickstepLauncher} launchCookie=null},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@134abaf, appThread = android.app.IApplicationThread$Stub$Proxy@8169bbc, debugName = QuickstepLaunchHome }}
+10-31 08:20:49.335   867   910 V WindowManagerShell:  Delegate animation for (#19) to null
+10-31 08:20:49.335   867   910 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultTransitionHandler@e99359e
+10-31 08:20:49.335   867   910 V WindowManagerShell: start default transition animation, info = {id=19 t=OPEN f=0x0 trk=0 opt={t=CUSTOM enterResId=0 exitResId=0} r=[0@Point(0, 0)] c=[{null m=OPEN f=FILLS_TASK leash=Surface(name=ActivityRecord{7354e21 u0 com.ronald.chordfinder/.SongActivity)/@0x4a96b3f sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) d=-1->0 r=-1->0:-1 bc=ff303030 component=com.ronald.chordfinder/.SongActivity},{null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{923d60e u0 com.ronald.chordfinder/.SongActivity)/@0xc8a0c0c sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SongActivity}]}
+10-31 08:20:49.336   867   910 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#19) android.os.BinderProxy@eebb1e0@0
+10-31 08:20:49.350   542   565 V WindowManager: Finish Transition (#19): created at 10-31 08:20:49.103 collect-started=0.03ms request-sent=4.663ms started=6.315ms ready=10.308ms sent=227.806ms finished=246.244ms
+10-31 08:20:49.351   542  2456 W UserManagerService: Requested status bar icon for non-badged user 0
+10-31 08:20:49.351   542  2456 W UserManagerService: Requested status bar icon for non-badged user 0
+10-31 08:20:49.351   867   910 V WindowManagerShell: Track 0 became idle
+10-31 08:20:49.351   867   910 V WindowManagerShell: All active transition animations finished
+10-31 08:20:49.351   867   910 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@e99359e
+10-31 08:20:49.351   867   910 V WindowManagerShell: Track 0 became idle
+10-31 08:20:49.351   867   910 V WindowManagerShell: All active transition animations finished
+10-31 08:20:49.352  2927  2927 D VRI[SongActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-31 08:20:49.359  2927  2927 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@8bbd035
+10-31 08:20:49.363   542  2456 D CoreBackPreview: Window{14b451a u0 com.ronald.chordfinder/com.ronald.chordfinder.SongActivity}: Setting back callback null
+10-31 08:20:49.364   542  2456 W InputManager-JNI: Input channel object '14b451a com.ronald.chordfinder/com.ronald.chordfinder.SongActivity (client)' was disposed without first being removed with the input manager!
+10-31 08:20:49.388   542   657 I ImeTracker: com.ronald.chordfinder:442c8bb: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-31 08:20:49.390   542   657 I ImeTracker: com.ronald.chordfinder:442c8bb: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-31 08:20:50.345   348   380 I netd    : tetherGetStats() -> {[]} <0.48ms>
+10-31 08:20:50.350   348   380 I netd    : bandwidthSetGlobalAlert(2097152) <0.14ms>
+10-31 08:20:50.355   348   380 I netd    : bandwidthRemoveInterfaceQuota(eth0) <0.63ms>
+10-31 08:20:50.356   348   380 I netd    : bandwidthSetInterfaceQuota(eth0, 9223372036854775807) <0.56ms>
+10-31 08:20:50.359   348   380 I netd    : bandwidthRemoveInterfaceQuota(eth0) <0.43ms>
+10-31 08:20:50.360   348   348 I netd    : bandwidthSetInterfaceQuota(eth0, 9223372036854775807) <0.46ms>
+10-31 08:20:50.363   542   866 D NetworkStatsObservers: Unregistering RequestInfo from pid/uid:542/1000(android) for DataUsageRequest [ requestId=6, networkTemplate=NetworkTemplate: matchRule=MOBILE, matchSubscriberIds=[310260...], matchWifiNetworkKeys=[], metered=YES, defaultNetwork=NO, thresholdInBytes=3432733 ] accessLevel:3
+10-31 08:20:50.364   542   777 D NetworkStatsObservers: Registering observer for RequestInfo from pid/uid:542/1000(android) for DataUsageRequest [ requestId=7, networkTemplate=NetworkTemplate: matchRule=MOBILE, matchSubscriberIds=[310260...], matchWifiNetworkKeys=[], metered=YES, defaultNetwork=NO, thresholdInBytes=3419802 ] accessLevel:3
+10-31 08:20:50.384  2927  2940 D EGL_emulation: app_time_stats: avg=567.60ms min=40.70ms max=1094.50ms count=2
+10-31 08:20:50.385   348   348 I netd    : tetherGetStats() -> {[]} <0.36ms>
+10-31 08:20:52.164   357  1431 D android.hardware.audio@7.1-impl.ranchu: threadLoop: entering standby, frames: 2453440
+10-31 08:20:52.610   542  1717 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+10-31 08:20:53.060   867  1005 D EGL_emulation: app_time_stats: avg=14721.21ms min=7.59ms max=29434.83ms count=2
+10-31 08:20:53.179  3160  3160 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+10-31 08:20:53.179  3160  3160 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+10-31 08:20:53.197   146   146 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+10-31 08:20:53.197  3160  3161 I Gralloc4: mapper 4.x is not supported
+--------- beginning of kernel
+10-31 08:20:53.357     0     0 I servicemanager: Caller(pid=3160,uid=0,sid=u:r:su:s0) Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest. No alternative instances declared in VINTF.
+10-31 08:20:53.418   542   566 D AutofillManagerService: onBackKeyPressed()
+10-31 08:20:53.423   867   910 V WindowManagerShell: Transition requested (#20): android.os.BinderProxy@7537c5b TransitionRequestInfo { type = CLOSE, triggerTask = null, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 20 }
+10-31 08:20:53.438   418   418 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+10-31 08:20:53.471  2927  2940 D EGL_emulation: app_time_stats: avg=177.45ms min=11.82ms max=2328.05ms count=17
+10-31 08:20:53.553   542   565 V WindowManager: Sent Transition (#20) createdAt=10-31 08:20:53.420 via request=TransitionRequestInfo { type = CLOSE, triggerTask = null, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 20 }
+10-31 08:20:53.553   542   565 V WindowManager:     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+10-31 08:20:53.553   542   565 V WindowManager:     info={id=20 t=CLOSE f=0x0 trk=0 opt={t=FROM_STYLE} r=[0@Point(0, 0)] c=[
+10-31 08:20:53.553   542   565 V WindowManager:         {null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{7354e21 u0 com.ronald.chordfinder/.SongActivity)/@0xfd3e2cc sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SongActivity},
+10-31 08:20:53.553   542   565 V WindowManager:         {null m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{c362862 u0 com.ronald.chordfinder/.SetlistActivity)/@0x82c786b sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SetlistActivity}
+10-31 08:20:53.553   542   565 V WindowManager:     ]}
+10-31 08:20:53.554   867  2121 V WindowManagerShell: onTransitionReady(transaction=2327872275574)
+10-31 08:20:53.555   867   910 V WindowManagerShell: onTransitionReady (#20) android.os.BinderProxy@7537c5b: {id=20 t=CLOSE f=0x0 trk=0 opt={t=FROM_STYLE} r=[0@Point(0, 0)] c=[{null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{7354e21 u0 com.ronald.chordfinder/.SongActivity)/@0x7d1dcf8 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SongActivity},{null m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{c362862 u0 com.ronald.chordfinder/.SetlistActivity)/@0x57ed5d1 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SetlistActivity}]}
+10-31 08:20:53.555   867   910 V WindowManagerShell: Playing animation for (#20) android.os.BinderProxy@7537c5b@0
+10-31 08:20:53.555   867   910 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultMixedHandler@6fb15a1
+10-31 08:20:53.555   867   910 V WindowManagerShell:  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@50573c6
+10-31 08:20:53.555   867   910 V WindowManagerShell:  try handler com.android.wm.shell.pip.PipTransition@dbccf87
+10-31 08:20:53.555   867   910 V WindowManagerShell:  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@a09aeb4
+10-31 08:20:53.555   867   910 V WindowManagerShell:  try handler com.android.wm.shell.recents.RecentsTransitionHandler@c926add
+10-31 08:20:53.555   867   910 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+10-31 08:20:53.555   867   910 V WindowManagerShell:  try handler com.android.wm.shell.splitscreen.StageCoordinator@ad50652
+10-31 08:20:53.555   867   910 V WindowManagerShell:  try handler com.android.wm.shell.transition.RemoteTransitionHandler@a0cdd23
+10-31 08:20:53.556   867   910 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=20 t=CLOSE f=0x0 trk=0 opt={t=FROM_STYLE} r=[0@Point(0, 0)] c=[{null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{7354e21 u0 com.ronald.chordfinder/.SongActivity)/@0x7d1dcf8 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SongActivity},{null m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{c362862 u0 com.ronald.chordfinder/.SetlistActivity)/@0x57ed5d1 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SetlistActivity}]}
+10-31 08:20:53.556   867   910 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.android.launcher3/com.android.launcher3.uioverrides.QuickstepLauncher} launchCookie=null},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@134abaf, appThread = android.app.IApplicationThread$Stub$Proxy@8169bbc, debugName = QuickstepLaunchHome }}
+10-31 08:20:53.556   867   910 V WindowManagerShell:  Delegate animation for (#20) to null
+10-31 08:20:53.556   867   910 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultTransitionHandler@e99359e
+10-31 08:20:53.556   867   910 V WindowManagerShell: start default transition animation, info = {id=20 t=CLOSE f=0x0 trk=0 opt={t=FROM_STYLE} r=[0@Point(0, 0)] c=[{null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{7354e21 u0 com.ronald.chordfinder/.SongActivity)/@0x7d1dcf8 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SongActivity},{null m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{c362862 u0 com.ronald.chordfinder/.SetlistActivity)/@0x57ed5d1 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SetlistActivity}]}
+10-31 08:20:53.559   867   910 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@5c3d0a4 animAttr=0x6 type=CLOSE isEntrance=true
+10-31 08:20:53.559   867   910 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@7c31bd3 animAttr=0x7 type=CLOSE isEntrance=false
+10-31 08:20:53.566   542   949 W UserManagerService: Requested status bar icon for non-badged user 0
+10-31 08:20:53.684   542   657 I ImeTracker: com.ronald.chordfinder:f7afe0d0: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+10-31 08:20:53.685   542   657 I ImeTracker: com.ronald.chordfinder:f7afe0d0: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-31 08:20:53.729   867   910 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@e99359e
+10-31 08:20:53.729   867   910 W Looper  : Slow dispatch took 174ms wmshell.main h=android.os.Handler c=com.android.wm.shell.transition.Transitions$TransitionPlayerImpl$$ExternalSyntheticLambda0@fade1c5 m=0
+10-31 08:20:53.739   867   910 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#20) android.os.BinderProxy@7537c5b@0
+10-31 08:20:53.743   867   910 V WindowManagerShell: Track 0 became idle
+10-31 08:20:53.743   867   910 V WindowManagerShell: All active transition animations finished
+10-31 08:20:53.744   542   949 W UserManagerService: Requested status bar icon for non-badged user 0
+10-31 08:20:53.744  2927  2927 D VRI[SongActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-31 08:20:53.745   542   565 V WindowManager: Finish Transition (#20): created at 10-31 08:20:53.420 collect-started=0.088ms request-sent=0.407ms started=2.794ms ready=5.227ms sent=131.058ms finished=320.211ms
+10-31 08:20:53.745   542  1957 W UserManagerService: Requested status bar icon for non-badged user 0
+10-31 08:20:53.747  2927  2927 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@19c5d38
+10-31 08:20:53.748   542  1957 D CoreBackPreview: Window{577ab5d u0 com.ronald.chordfinder/com.ronald.chordfinder.SongActivity}: Setting back callback null
+10-31 08:20:53.749   542  1957 W InputManager-JNI: Input channel object '577ab5d com.ronald.chordfinder/com.ronald.chordfinder.SongActivity (client)' was disposed without first being removed with the input manager!
+10-31 08:20:54.447   542   566 D AutofillManagerService: onBackKeyPressed()
+10-31 08:20:54.449   867   910 V WindowManagerShell: Transition requested (#21): android.os.BinderProxy@bf27428 TransitionRequestInfo { type = CLOSE, triggerTask = null, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 21 }
+10-31 08:20:54.454   418   418 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+10-31 08:20:54.457   542   568 D OomAdjuster: Not killing cached processes
+10-31 08:20:54.459  2927  2927 W WindowOnBackDispatcher: OnBackInvokedCallback is not enabled for the application.
+10-31 08:20:54.459  2927  2927 W WindowOnBackDispatcher: Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+10-31 08:20:54.473  2927  2927 D AutofillManager: view not autofillable - not passing ime action check
+10-31 08:20:54.547   867  2121 V WindowManagerShell: onTransitionReady(transaction=2327872275592)
+10-31 08:20:54.547   867   910 V WindowManagerShell: onTransitionReady (#21) android.os.BinderProxy@bf27428: {id=21 t=CLOSE f=0x0 trk=0 opt={t=FROM_STYLE} r=[0@Point(0, 0)] c=[{null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{c362862 u0 com.ronald.chordfinder/.SetlistActivity)/@0x48fd541 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SetlistActivity},{null m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{17c7746 u0 com.ronald.chordfinder/.MainActivity)/@0x57dcae6 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.MainActivity}]}
+10-31 08:20:54.547   867   910 V WindowManagerShell: Playing animation for (#21) android.os.BinderProxy@bf27428@0
+10-31 08:20:54.547   867   910 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultMixedHandler@6fb15a1
+10-31 08:20:54.547   867   910 V WindowManagerShell:  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@50573c6
+10-31 08:20:54.547   867   910 V WindowManagerShell:  try handler com.android.wm.shell.pip.PipTransition@dbccf87
+10-31 08:20:54.547   867   910 V WindowManagerShell:  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@a09aeb4
+10-31 08:20:54.547   867   910 V WindowManagerShell:  try handler com.android.wm.shell.recents.RecentsTransitionHandler@c926add
+10-31 08:20:54.547   867   910 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+10-31 08:20:54.547   867   910 V WindowManagerShell:  try handler com.android.wm.shell.splitscreen.StageCoordinator@ad50652
+10-31 08:20:54.547   867   910 V WindowManagerShell:  try handler com.android.wm.shell.transition.RemoteTransitionHandler@a0cdd23
+10-31 08:20:54.547   867   910 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=21 t=CLOSE f=0x0 trk=0 opt={t=FROM_STYLE} r=[0@Point(0, 0)] c=[{null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{c362862 u0 com.ronald.chordfinder/.SetlistActivity)/@0x48fd541 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SetlistActivity},{null m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{17c7746 u0 com.ronald.chordfinder/.MainActivity)/@0x57dcae6 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.MainActivity}]}
+10-31 08:20:54.548   867   910 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.android.launcher3/com.android.launcher3.uioverrides.QuickstepLauncher} launchCookie=null},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@134abaf, appThread = android.app.IApplicationThread$Stub$Proxy@8169bbc, debugName = QuickstepLaunchHome }}
+10-31 08:20:54.548   867   910 V WindowManagerShell:  Delegate animation for (#21) to null
+10-31 08:20:54.548   867   910 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultTransitionHandler@e99359e
+10-31 08:20:54.548   867   910 V WindowManagerShell: start default transition animation, info = {id=21 t=CLOSE f=0x0 trk=0 opt={t=FROM_STYLE} r=[0@Point(0, 0)] c=[{null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{c362862 u0 com.ronald.chordfinder/.SetlistActivity)/@0x48fd541 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SetlistActivity},{null m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{17c7746 u0 com.ronald.chordfinder/.MainActivity)/@0x57dcae6 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.MainActivity}]}
+10-31 08:20:54.548   867   910 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@20eaad4 animAttr=0x6 type=CLOSE isEntrance=true
+10-31 08:20:54.549   867   910 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@c43847d animAttr=0x7 type=CLOSE isEntrance=false
+10-31 08:20:54.582   542   565 V WindowManager: Sent Transition (#21) createdAt=10-31 08:20:54.448 via request=TransitionRequestInfo { type = CLOSE, triggerTask = null, pipTask = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 21 }
+10-31 08:20:54.582   542   565 V WindowManager:     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+10-31 08:20:54.582   542   565 V WindowManager:     info={id=21 t=CLOSE f=0x0 trk=0 opt={t=FROM_STYLE} r=[0@Point(0, 0)] c=[
+10-31 08:20:54.582   542   565 V WindowManager:         {null m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{c362862 u0 com.ronald.chordfinder/.SetlistActivity)/@0x82c786b sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.SetlistActivity},
+10-31 08:20:54.582   542   565 V WindowManager:         {null m=TO_FRONT f=FILLS_TASK leash=Surface(name=ActivityRecord{17c7746 u0 com.ronald.chordfinder/.MainActivity)/@0x498e24d sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) d=0 bc=ff303030 component=com.ronald.chordfinder/.MainActivity}
+10-31 08:20:54.582   542   565 V WindowManager:     ]}
+10-31 08:20:54.610   542   949 W UserManagerService: Requested status bar icon for non-badged user 0
+10-31 08:20:54.635   542   657 I ImeTracker: com.ronald.chordfinder:a35aab09: onRequestShow at ORIGIN_SERVER reason ATTACH_NEW_INPUT fromUser false
+10-31 08:20:54.646   542   657 I ImeTracker: com.ronald.chordfinder:3d9f248f: onRequestShow at ORIGIN_SERVER reason SHOW_RESTORE_IME_VISIBILITY fromUser false
+10-31 08:20:54.653  1666  1666 I LatinIME: Starting input. Cursor position = 0,0
+10-31 08:20:54.674   348   348 I netd    : tetherGetStats() -> {[]} <0.45ms>
+10-31 08:20:54.675   867   910 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@e99359e
+10-31 08:20:54.675   867   910 W Looper  : Slow dispatch took 127ms wmshell.main h=android.os.Handler c=com.android.wm.shell.transition.Transitions$TransitionPlayerImpl$$ExternalSyntheticLambda0@43d751f m=0
+10-31 08:20:54.675   867   910 W Looper  : Slow delivery took 65ms wmshell.main h=android.os.Handler c=null m=1
+10-31 08:20:54.718   867   937 W Looper  : Slow delivery took 30ms wmshell.anim h=android.view.Choreographer$FrameHandler c=android.view.Choreographer$FrameDisplayEventReceiver@89dbaca m=0
+10-31 08:20:54.718   867   910 W Looper  : Drained
+10-31 08:20:54.718   867   910 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#21) android.os.BinderProxy@bf27428@0
+10-31 08:20:54.722   542   561 D ImeInsetsSourceProvider: showImePostLayout cancelled, isScheduledAndReadyToShowIme: false, mImeRequester: Window{c7b408e u0 com.ronald.chordfinder/com.ronald.chordfinder.MainActivity}, serverVisible: false, frozen: false, mWindowContainer is: non-null, windowState: Window{9c31814 u0 InputMethod}, isDrawn: false, mGivenInsetsPending: false, dcTarget: Window{25268ae u0 com.ronald.chordfinder/com.ronald.chordfinder.SetlistActivity}, controlTarget: Window{c7b408e u0 com.ronald.chordfinder/com.ronald.chordfinder.MainActivity}
+10-31 08:20:54.722   542   561 D ImeInsetsSourceProvider: controlTarget == DisplayContent.controlTarget: true, hasPendingControls: false, leash is: non-null, isImeLayeringTarget: false, isAboveImeLayeringTarget: false, isImeFallbackTarget: false, isImeInputTarget: true, sameAsImeControlTarget: true
+10-31 08:20:54.724   542   561 I ImeTracker: com.ronald.chordfinder:a35aab09: onCancelled at PHASE_WM_SHOW_IME_RUNNER
+10-31 08:20:54.732  2927  2927 D VRI[SetlistActivity]: visibilityChanged oldVisibility=true newVisibility=false
+10-31 08:20:54.734   867   910 V WindowManagerShell: Track 0 became idle
+10-31 08:20:54.734   867   910 V WindowManagerShell: All active transition animations finished
+10-31 08:20:54.737  1316  1316 D View    : ---- ST:requestLayout 
+10-31 08:20:54.738  1316  1316 D View    : requestLayout : getStackTrace(Thread.java:1841) <- printStackStrace(View.java:27969) <- requestLayout(View.java:27999) <- requestLayout(View.java:28020) <- requestLayout(View.java:28020) <- requestLayout(View.java:28020) <- removeAllViews(ViewGroup.java:5740) <- layoutButtons(PhonePortraitNavLayoutter.kt:78) <- updateButtonLayoutSpacing(NavbarButtonsViewController.java:802) <- parseSystemUiFlags(NavbarButtonsViewController.java:484) <- updateStateForSysuiFlags(NavbarButtonsViewController.java:493) <- updateSysuiStateFlags(TaskbarActivityContext.java:817) <- onSystemUiFlagsChanged(TaskbarManager.java:502) <- onSystemUiFlagsChanged(TouchInteractionService.java:722) <- -$$Nest$monSystemUiFlagsChanged(null:0) <- lambda$onSystemUiStateChanged$13(TouchInteractionService.java:311) <- accept(D8$$SyntheticClass:0) <- executeForTouchInteractionService(TouchInteractionService.java:377) <- lambda$onSystemUiStateChanged$14(TouchInteractionService.java:308) <- $r8$lambda$8AiRCS7Y2H5KRXXuIdOdP1LQuA0(null:0) <- 
+10-31 08:20:54.752  2927  2927 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda11@c42cd59
+10-31 08:20:54.754   542   949 D CoreBackPreview: Window{25268ae u0 com.ronald.chordfinder/com.ronald.chordfinder.SetlistActivity}: Setting back callback null
+10-31 08:20:54.755   542  1368 W InputManager-JNI: Input channel object '25268ae com.ronald.chordfinder/com.ronald.chordfinder.SetlistActivity (client)' was disposed without first being removed with the input manager!
+10-31 08:20:54.765   542   565 V WindowManager: Finish Transition (#21): created at 10-31 08:20:54.448 collect-started=0.039ms request-sent=0.093ms started=3.297ms ready=8.018ms sent=97.753ms finished=282.682ms
+10-31 08:20:54.776  1316  1509 D EGL_emulation: app_time_stats: avg=2652.29ms min=6.24ms max=18376.86ms count=7
+10-31 08:20:54.799   542  1957 W UserManagerService: Requested status bar icon for non-badged user 0
+10-31 08:20:54.805   542  1957 W UserManagerService: Requested status bar icon for non-badged user 0
+10-31 08:20:54.877  2927  2927 D InsetsController: show(ime(), fromIme=true)
+10-31 08:20:54.894  1316  1316 D View    : ---- ST:requestLayout 
+10-31 08:20:54.896   867   910 D WindowManagerShell: onKeepClearAreasChanged: restricted={}, unrestricted={Rect(0, 1499 - 1080, 2274)}
+10-31 08:20:54.897  1316  1316 D View    : requestLayout : getStackTrace(Thread.java:1841) <- printStackStrace(View.java:27969) <- requestLayout(View.java:27999) <- setLayoutParams(View.java:20530) <- updateViewLayout(WindowManagerGlobal.java:464) <- updateViewLayout(WindowManagerImpl.java:165) <- notifyUpdateLayoutParams(TaskbarActivityContext.java:1528) <- onTaskbarOrBubblebarWindowHeightOrInsetsChanged(TaskbarInsetsController.kt:186) <- lambda$onIsStashedChanged$7(TaskbarStashController.java:938) <- $r8$lambda$V70CIL_pG5t21J73JvZUvAfU2B0(null:0) <- run(D8$$SyntheticClass:0) <- runAfterInit(TaskbarControllers.java:263) <- onIsStashedChanged(TaskbarStashController.java:935) <- lambda$createAnimToIsStashed$3(TaskbarStashController.java:620) <- $r8$lambda$lICNXpsaTGWd-5rxHyDFfQwiuw4(null:0) <- run(D8$$SyntheticClass:0) <- onAnimationEnd(AnimatorListeners.java:54) <- onAnimationEnd(Animator.java:708) <- call(D8$$SyntheticClass:0) <- callOnList(Animator.java:666) <- 
+10-31 08:20:54.910  2927  2927 I ImeTracker: com.ronald.chordfinder:3d9f248f: onShown
+10-31 08:20:55.143  1316  1316 W FrameTracker: Missed App frame:UNKNOWN: 10, 20121, 0, CUJ=J<TASKBAR_COLLAPSE>
+10-31 08:20:55.144  1316  1316 W FrameTracker: Missed SF frame:UNKNOWN: 10, 20121, 0, CUJ=J<TASKBAR_COLLAPSE>
+10-31 08:20:55.144  1316  1316 W FrameTracker: Missing HWUI jank callback for vsyncId: 20121, CUJ=J<TASKBAR_COLLAPSE>
+10-31 08:20:55.144  1316  1316 W FrameTracker: Missed App frame:UNKNOWN: 328, 20143, 126629636, CUJ=J<TASKBAR_COLLAPSE>
+10-31 08:20:55.144  1316  1316 W FrameTracker: Missed App frame:UNKNOWN: 74, 20164, 0, CUJ=J<TASKBAR_COLLAPSE>
+10-31 08:20:55.144  1316  1316 W FrameTracker: Missed SF frame:UNKNOWN: 74, 20164, 0, CUJ=J<TASKBAR_COLLAPSE>
+10-31 08:20:55.144  1316  1316 W FrameTracker: Missing HWUI jank callback for vsyncId: 20164, CUJ=J<TASKBAR_COLLAPSE>
+10-31 08:20:55.144  1316  1316 W FrameTracker: Missed SF frame:UNKNOWN: 66, 20186, 256221585, CUJ=J<TASKBAR_COLLAPSE>
+10-31 08:20:55.144  1316  1371 V PerfettoTrigger: Not triggering com.android.telemetry.interaction-jank-monitor-61 - not enough time since last trigger
+10-31 08:20:55.475   542   566 D AutofillManagerService: onBackKeyPressed()
+10-31 08:20:55.476  1666  1666 I ImeTracker: com.android.inputmethod.latin:e3d72436: onRequestHide at ORIGIN_IME reason HIDE_SOFT_INPUT_BY_BACK_KEY fromUser true
+10-31 08:20:55.478  2927  2927 D InsetsController: hide(ime(), fromIme=true)
+10-31 08:20:55.482   867   910 D WindowManagerShell: onKeepClearAreasChanged: restricted={}, unrestricted={}
+10-31 08:20:55.484  1316  1316 D View    : ---- ST:requestLayout 
+10-31 08:20:55.484  1316  1316 D View    : requestLayout : getStackTrace(Thread.java:1841) <- printStackStrace(View.java:27969) <- requestLayout(View.java:27999) <- requestLayout(View.java:28020) <- requestLayout(View.java:28020) <- requestLayout(View.java:28020) <- removeAllViews(ViewGroup.java:5740) <- layoutButtons(PhonePortraitNavLayoutter.kt:78) <- updateButtonLayoutSpacing(NavbarButtonsViewController.java:802) <- parseSystemUiFlags(NavbarButtonsViewController.java:484) <- updateStateForSysuiFlags(NavbarButtonsViewController.java:493) <- updateSysuiStateFlags(TaskbarActivityContext.java:817) <- onSystemUiFlagsChanged(TaskbarManager.java:502) <- onSystemUiFlagsChanged(TouchInteractionService.java:722) <- -$$Nest$monSystemUiFlagsChanged(null:0) <- lambda$onSystemUiStateChanged$13(TouchInteractionService.java:311) <- accept(D8$$SyntheticClass:0) <- executeForTouchInteractionService(TouchInteractionService.java:377) <- lambda$onSystemUiStateChanged$14(TouchInteractionService.java:308) <- $r8$lambda$8AiRCS7Y2H5KRXXuIdOdP1LQuA0(null:0) <- 
+10-31 08:20:55.529  2927  2927 I ImeTracker: com.ronald.chordfinder:e595e2c0: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT_ON_ANIMATION_STATE_CHANGED fromUser false
+10-31 08:20:55.575  2927  2927 I ImeTracker: com.android.inputmethod.latin:e3d72436: onHidden
+10-31 08:20:55.581   542   657 I ImeTracker: com.ronald.chordfinder:e595e2c0: onCancelled at PHASE_SERVER_SHOULD_HIDE
+10-31 08:20:55.665  2927  2940 D EGL_emulation: app_time_stats: avg=187.20ms min=36.49ms max=380.01ms count=6
+10-31 08:20:55.709  1316  1316 D View    : ---- ST:requestLayout 
+10-31 08:20:55.709  1316  1316 D View    : requestLayout : getStackTrace(Thread.java:1841) <- printStackStrace(View.java:27969) <- requestLayout(View.java:27999) <- setLayoutParams(View.java:20530) <- updateViewLayout(WindowManagerGlobal.java:464) <- updateViewLayout(WindowManagerImpl.java:165) <- notifyUpdateLayoutParams(TaskbarActivityContext.java:1528) <- onTaskbarOrBubblebarWindowHeightOrInsetsChanged(TaskbarInsetsController.kt:186) <- lambda$onIsStashedChanged$7(TaskbarStashController.java:938) <- $r8$lambda$V70CIL_pG5t21J73JvZUvAfU2B0(null:0) <- run(D8$$SyntheticClass:0) <- runAfterInit(TaskbarControllers.java:263) <- onIsStashedChanged(TaskbarStashController.java:935) <- lambda$createAnimToIsStashed$3(TaskbarStashController.java:620) <- $r8$lambda$lICNXpsaTGWd-5rxHyDFfQwiuw4(null:0) <- run(D8$$SyntheticClass:0) <- onAnimationEnd(AnimatorListeners.java:54) <- onAnimationEnd(Animator.java:708) <- call(D8$$SyntheticClass:0) <- callOnList(Animator.java:666) <- 
+10-31 08:20:55.776  1316  1509 D EGL_emulation: app_time_stats: avg=64.59ms min=3.78ms max=431.46ms count=12
+10-31 08:20:55.861  1316  1316 W FrameTracker: Missed App frame:UNKNOWN: 10, 20303, 0, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.861  1316  1316 W FrameTracker: Missed SF frame:UNKNOWN: 10, 20303, 0, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.861  1316  1316 W FrameTracker: Missing HWUI jank callback for vsyncId: 20303, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.861  1316  1316 W FrameTracker: Missed App frame:UNKNOWN: 74, 20339, 0, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.861  1316  1316 W FrameTracker: Missed SF frame:UNKNOWN: 74, 20339, 0, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.861  1316  1316 W FrameTracker: Missing HWUI jank callback for vsyncId: 20339, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.861  1316  1316 W FrameTracker: Missed App frame:UNKNOWN: 88, 20361, 137437960, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.861  1316  1316 W FrameTracker: Missed SF frame:UNKNOWN: 88, 20361, 137437960, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.861  1316  1316 W FrameTracker: Missed App frame:UNKNOWN: 74, 20376, 0, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.862  1316  1316 W FrameTracker: Missed SF frame:UNKNOWN: 74, 20376, 0, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.862  1316  1316 W FrameTracker: Missing HWUI jank callback for vsyncId: 20376, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.862  1316  1316 W FrameTracker: Missed App frame:UNKNOWN: 74, 20399, 0, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.862  1316  1316 W FrameTracker: Missed SF frame:UNKNOWN: 74, 20399, 0, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.863  1316  1316 W FrameTracker: Missing HWUI jank callback for vsyncId: 20399, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.863  1316  1316 W FrameTracker: Missed App frame:UNKNOWN: 328, 20422, 84783626, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.863  1316  1316 W FrameTracker: Missed App frame:UNKNOWN: 74, 20430, 0, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.863  1316  1316 W FrameTracker: Missed SF frame:UNKNOWN: 74, 20430, 0, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.863  1316  1316 W FrameTracker: Missing HWUI jank callback for vsyncId: 20430, CUJ=J<TASKBAR_EXPAND>
+10-31 08:20:55.863  1316  1371 V PerfettoTrigger: Not triggering com.android.telemetry.interaction-jank-monitor-60 - not enough time since last trigger
+10-31 08:20:56.514   542  1584 W ActivityTaskManager: callingPackage for (uid=0, pid=3185) has no WPC
+10-31 08:20:56.514   542  1584 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_ORIENTATION_OVERRIDE
+10-31 08:20:56.515   542  1584 V GrammaticalInflectionUtils: AttributionSource: AttributionSource { uid = 10148, packageName = null, attributionTag = null, token = android.os.Binder@662ee5c, deviceId = 0, next = null } does not have READ_SYSTEM_GRAMMATICAL_GENDER permission.
+10-31 08:20:56.515   542  1584 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES
+10-31 08:20:56.515   542  1584 W OptProp : Cannot read opt property android.window.PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE
+10-31 08:20:56.517   867  2121 D KeyguardService: setOccluded(false)
+10-31 08:20:56.517   867  2121 D KeyguardViewMediator: setOccluded(false)
+10-31 08:20:56.517   867   867 D KeyguardViewMediator: handleSetOccluded(false)
+10-31 08:20:56.517   867   867 D KeyguardViewMediator: KeyguardViewMediator queue processing message: SET_OCCLUDED
+10-31 08:20:56.518   542  1584 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=com.ronald.chordfinder/.MainActivity} with LAUNCH_SINGLE_TASK from uid 0 (BAL_ALLOW_ALLOWLISTED_UID) result code=3
+10-31 08:20:56.520   867   910 D WindowManagerShell: onActivityRestartAttempt: ComponentInfo{com.ronald.chordfinder/com.ronald.chordfinder.MainActivity}
+10-31 08:20:56.677  2927  2940 D EGL_emulation: app_time_stats: avg=76.29ms min=19.10ms max=414.55ms count=13
+10-31 08:20:57.259   542  1717 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+10-31 08:20:57.613  3188  3188 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 0 <<<<<<
+10-31 08:20:57.618  3188  3188 I AndroidRuntime: Using default boot image
+10-31 08:20:57.618  3188  3188 I AndroidRuntime: Leaving lock profiling enabled
+10-31 08:20:57.621  3188  3188 I app_process: Core platform API reporting enabled, enforcing=false
+10-31 08:20:57.621  3188  3188 I app_process: Using CollectorTypeCMC GC.
+10-31 08:20:57.679  2927  2940 D EGL_emulation: app_time_stats: avg=500.90ms min=499.08ms max=502.72ms count=2
+10-31 08:20:57.682  3188  3188 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+10-31 08:20:57.701  3188  3188 D nativeloader: Load libicu_jni.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+10-31 08:20:57.701  3188  3188 D app_process: u_setTimeZoneFilesDirectory("/apex/com.android.tzdata/etc/tz/versioned/8/icu") succeeded. 
+10-31 08:20:57.701  3188  3188 D app_process: I18n APEX ICU file found: /apex/com.android.i18n/etc/icu/icudt75l.dat
+10-31 08:20:57.702  3188  3188 D nativeloader: Load libjavacore.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+10-31 08:20:57.703  3188  3188 D nativeloader: Load libopenjdk.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+10-31 08:20:57.705  3188  3188 W app_process: Unexpected CPU variant for x86: x86_64.
+10-31 08:20:57.705  3188  3188 W app_process: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, default
+10-31 08:20:57.707  3188  3188 W app_process: ClassLoaderContext shared library size mismatch. Expected=2, found=0 (PCL[]{PCL[/system/framework/android.test.base.jar*724373495]#PCL[/system/framework/android.test.mock.jar*1452759902]} | PCL[])
+10-31 08:20:57.707  3188  3188 W app_process: ClassLoaderContext classpath size mismatch. expected=0, found=1 (PCL[]{PCL[/system/framework/android.test.runner.jar*2496447986]#PCL[/system/framework/android.test.base.jar*724373495]} | PCL[/system/framework/android.test.runner.jar*2496447986])
+10-31 08:20:57.726  3188  3188 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+10-31 08:20:57.727  3188  3188 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+10-31 08:20:57.730  3188  3188 D UiAutomationConnection: Created on user UserHandle{0}
+10-31 08:20:57.730  3188  3188 I UiAutomation: Initialized for user 0 on display 0
+10-31 08:20:57.730  3188  3188 W UiAutomation: Created with deprecatead constructor, assumes DEFAULT_DISPLAY
+10-31 08:20:57.731   542  1584 D AccessibilityManagerService: changeCurrentUserForTestAutomationIfNeededLocked(0): ignoring because device doesn't support visible background users
+10-31 08:20:57.731   542  1584 I UiAutomationManager: Registering UiTestAutomationService (id=com.android.server.accessibility/UiAutomation, flags=0x0) when called by user 0
+10-31 08:20:57.733   542  1584 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.734   542   542 D BatterySaverPolicy: accessibility changed to true, updating policy.
+10-31 08:20:57.736  3188  3200 V UiAutomation: Init UiAutomation@d442920[id=17, displayId=0, flags=0]
+10-31 08:20:57.744   542  2456 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+10-31 08:20:57.745   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.745   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.745   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.745   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.745   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.745   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.745   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:57.745   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.743  3188  3188 W AccessibilityNodeInfoDumper: Fetch time: 4ms
+10-31 08:20:58.746   542  2456 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+10-31 08:20:58.746   542  2456 D AccessibilityManagerService: restoreCurrentUserForTestAutomationIfNeededLocked(): ignoring because device doesn't support visible background users
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.746   542   542 W IPCThreadState: Sending oneway calls to frozen process.
+10-31 08:20:58.748   542   542 D BatterySaverPolicy: accessibility changed to false, updating policy.
+10-31 08:20:58.750  3188  3188 D AndroidRuntime: Shutting down VM
+10-31 08:20:59.182  2927  2940 D EGL_emulation: app_time_stats: avg=500.88ms min=496.49ms max=504.19ms count=3
+10-31 08:20:59.639   413   621 D audioserver: logFgsApiBegin: FGS Logger Transaction failed, -129
+10-31 08:20:59.640   542  1957 W AS.PlaybackActivityMon: No piid assigned for invalid/internal port id 15
+10-31 08:20:59.659   542  2456 D CoreBackPreview: Window{89d7b45 u0 PopupWindow:29cd7ed}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@67c75a7, mPriority=0, mIsAnimationCallback=false}
+10-31 08:20:59.704   413   521 D AudioFlinger: mixer(0x7d5132d278e0) throttle end: throttle time(33)
+10-31 08:20:59.804   413   521 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+10-31 08:21:00.029   867  1005 D EGL_emulation: app_time_stats: avg=6969.19ms min=6969.19ms max=6969.19ms count=1
+10-31 08:21:01.224  3213  3213 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+10-31 08:21:01.224  3213  3213 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+10-31 08:21:01.247   146   146 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+10-31 08:21:01.247  3213  3214 I Gralloc4: mapper 4.x is not supported
+10-31 08:21:01.407     0     0 I servicemanager: Caller(pid=3213,uid=0,sid=u:r:su:s0) Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest. No alternative instances declared in VINTF.
+10-31 08:21:01.291  2927  2940 D EGL_emulation: app_time_stats: avg=537.97ms min=27.92ms max=1508.01ms count=3
+10-31 08:21:01.721   542   566 D AutofillManagerService: onBackKeyPressed()

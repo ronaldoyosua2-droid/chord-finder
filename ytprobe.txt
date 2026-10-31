@@ -1,0 +1,9 @@
+size: 1381531
+var ytInitialData: 1
+ytInitialData: 2
+videoRenderer: 20
+lockupViewModel: 2
+compactVideoRenderer: 0
+videoWithContextRenderer: 0
+not a bot: 0
+consent.youtube: 0
