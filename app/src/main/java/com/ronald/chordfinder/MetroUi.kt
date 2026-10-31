@@ -206,6 +206,8 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
 
     fun refreshButton() = updateButton()
 
+    val isRunning get() = engine.isRunning
+
     fun stop(byUser: Boolean = true) {
         if (byUser && syncRunning) userStopped = true
         syncRunning = false

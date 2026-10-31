@@ -889,7 +889,7 @@ class SongActivity : AppCompatActivity() {
             Toast.makeText(this, "Putar videonya, lalu tekan ♩ Sinkron lagi saat lagu mulai.", Toast.LENGTH_LONG).show()
             return
         }
-        if (metro.syncRunning || metro.isRunning) metro.stop(byUser = false)
+        if (metro.isRunning) metro.stop(byUser = false)
         tapping = true
         tapTimes.clear()
         updateTap()
