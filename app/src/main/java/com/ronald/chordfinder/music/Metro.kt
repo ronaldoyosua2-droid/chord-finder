@@ -14,6 +14,8 @@ data class SeqItem(val name: String, val bars: Int, val cue: String, val line: I
 
 data class MetroConfig(
     val bpm: Int = 80,
+    /** BPM pecahan (dari sinkron video), dipakai kalau > 0 supaya tidak melenceng di lagu panjang */
+    val bpmExact: Double = 0.0,
     val beats: Int = 4,          // ketukan per bar (pembilang birama)
     val unit: Int = 4,           // 4 = seperempat, 8 = seperdelapan
     val pattern: List<Step> = listOf(Step.ACCENT, Step.NORMAL, Step.NORMAL, Step.NORMAL),
@@ -55,7 +57,7 @@ sealed class Ev(val t: Double) {
  * Bar 0 = bar pertama lagu; hitungan masuk berada di bar -1.
  */
 class Timeline(private val c: MetroConfig) {
-    val beatSec = 60.0 / c.bpm
+    val beatSec = 60.0 / (if (c.bpmExact > 0) c.bpmExact else c.bpm.toDouble())
     private val pattern = c.patternFor(c.beats)
     private val countBars = if (c.countIn) 1 else 0
     private val seq = if (c.useSequence) c.sequence.filter { it.bars > 0 } else emptyList()
@@ -107,7 +109,7 @@ class Timeline(private val c: MetroConfig) {
     }
 
     /** Bar dan bagian yang sedang berjalan pada waktu [t] (detik). */
-    fun barAt(t: Double): Int = ((t / (c.beats * beatSec)).toInt()) - countBars
+    fun barAt(t: Double): Int = Math.floor(t / (c.beats * beatSec)).toInt() - countBars
 
     fun sectionAt(bar: Int): Int {
         if (seq.isEmpty() || bar < 0) return -1
@@ -244,5 +246,29 @@ object BeatDetector {
         }
         if (bestLag <= 0 || best <= 0) return null
         return (60 * fps / bestLag).roundToInt()
+    }
+}
+
+/** Hitung BPM & posisi ketukan 1 dari ketukan yang di-tap (waktu video, detik). */
+object TapSync {
+    data class Result(val bpm: Double, val offset: Double)
+
+    fun fit(taps: List<Double>): Result? {
+        if (taps.size < 4) return null
+        val diffs = taps.zipWithNext { a, b -> b - a }.filter { it > 0.2 && it < 2.0 }.sorted()
+        if (diffs.isEmpty()) return null
+        val med = diffs[diffs.size / 2]
+        // Nomor ketukan tiap tap (boleh ada yang terlewat)
+        val idx = taps.map { Math.round((it - taps[0]) / med).toDouble() }
+        val n = taps.size
+        val mx = idx.average(); val my = taps.average()
+        var sxy = 0.0; var sxx = 0.0
+        for (i in 0 until n) { sxy += (idx[i] - mx) * (taps[i] - my); sxx += (idx[i] - mx) * (idx[i] - mx) }
+        if (sxx <= 0) return null
+        val beat = sxy / sxx
+        val offset = my - beat * mx
+        val bpm = 60.0 / beat
+        if (bpm < 30 || bpm > 260) return null
+        return Result(bpm, offset)
     }
 }

@@ -98,5 +98,36 @@ adb shell input keyevent 4; sleep 2
 tap_text "Koleksi"
 shot 09-koleksi 3
 
+# 17+. Daftar ibadah (data contoh)
+adb shell am force-stop $PKG
+mkdir -p seed && python3 .github/scripts/seed.py seed
+D=/data/data/$PKG/files
+adb shell mkdir -p $D
+adb push seed/songs.json $D/songs.json
+adb push seed/setlists.json $D/setlists.json
+U=$(adb shell stat -c %u /data/data/$PKG | tr -d '\r')
+adb shell chown $U:$U $D/songs.json $D/setlists.json
+adb shell restorecon -R $D || true
+adb shell am start -W -n $PKG/.MainActivity
+sleep 2
+tap_text "Koleksi"; sleep 1
+tap_text "📅 Daftar"
+shot 17-daftar-ibadah 2
+tap_text "Minggu,"
+shot 18-isi-daftar 2
+tap_text "▶ Mulai"
+shot 19-lagu-di-daftar 4
+tap_text "3 ›"; sleep 1
+tap_text "2 ›"
+shot 20-lagu-3-kunci-daftar 4
+adb shell input keyevent 4; sleep 1
+adb shell input keyevent 4; sleep 1
+adb shell input keyevent 4; sleep 1
+adb shell am start -W -n $PKG/.MainActivity
+sleep 1
+tap_text "⋮"
+shot 21-menu-ekspor 1.5
+adb shell input keyevent 4
+
 adb logcat -d -t 300 > shots/logcat.txt
 ls -la shots

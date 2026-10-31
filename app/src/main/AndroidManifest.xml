@@ -32,6 +32,10 @@
         </activity>
 
         <activity
+            android:name=".SetlistActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".SongActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />

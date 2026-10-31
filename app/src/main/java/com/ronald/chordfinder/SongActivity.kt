@@ -59,11 +59,36 @@ class SongActivity : AppCompatActivity() {
         const val EXTRA_QUERY = "query"
         const val EXTRA_BPM = "bpm"
         const val EXTRA_SIG = "sig"
+        const val EXTRA_SETLIST = "setlist"
+        const val EXTRA_INDEX = "index"
         private const val REQ_MIC = 7
         private val SPEEDS = intArrayOf(1, 2, 3, 4, 6)
     }
 
     private lateinit var song: Song
+
+    // Daftar ibadah (kalau dibuka dari daftar): kunci disimpan per daftar
+    private var setlist: Setlist? = null
+    private var setIndex = -1
+    private val setItem get() = setlist?.items?.getOrNull(setIndex)?.takeIf { it.songId == song.id }
+    private var tr: Int
+        get() = setItem?.transpose ?: song.transpose
+        set(v) {
+            val it = setItem
+            if (it != null) { it.transpose = v; SetlistStore.persist(this) } else song.transpose = v
+        }
+
+    // Sinkron metronom ke video
+    private var vTime = 0.0
+    private var vWall = 0L
+    private var vState = -1
+    private var tapping = false
+    private val tapTimes = ArrayList<Double>()
+    private lateinit var tapPanel: LinearLayout
+    private lateinit var tapCount: TextView
+    private lateinit var tapResult: TextView
+    private lateinit var syncBtn: TextView
+    private lateinit var nudgeBox: LinearLayout
     private var saved = false
     private var lines: List<Line> = emptyList()
     private var keyExplicit = false
@@ -120,6 +145,8 @@ class SongActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        setlist = intent.getStringExtra(EXTRA_SETLIST)?.let { SetlistStore.get(this, it) }
+        setIndex = intent.getIntExtra(EXTRA_INDEX, -1)
         val id = intent.getStringExtra(EXTRA_ID)
         val existing = id?.let { SongStore.get(this, it) }
         if (existing != null) {
@@ -197,6 +224,7 @@ class SongActivity : AppCompatActivity() {
         top.addView(starView)
         top.addView(iconBtn("⋮") { v -> menu(v) })
         root.addView(top)
+        buildSetNav()?.let { root.addView(it) }
 
         root.addView(buildYtCard())
         root.addView(buildPlayer())
@@ -233,6 +261,7 @@ class SongActivity : AppCompatActivity() {
         val chordFrame = FrameLayout(this)
         chordFrame.addView(scroll, FrameLayout.LayoutParams(MATCH, MATCH))
         chordFrame.addView(metro.buildOverlay(), FrameLayout.LayoutParams(MATCH, MATCH))
+        chordFrame.addView(buildTapPanel(), FrameLayout.LayoutParams(MATCH, MATCH))
         root.addView(chordFrame, lp(MATCH, 0, 1f))
 
         // Panel kontrol bawah
@@ -309,11 +338,11 @@ class SongActivity : AppCompatActivity() {
     private fun mode(): NumberMode = NumberMode.valueOf(Prefs.numberMode(this))
 
     private fun render() {
-        val target = Notes.mod12(song.key + song.transpose)
+        val target = Notes.mod12(song.key + tr)
         val shift = when {
-            song.transpose == 0 -> ""
-            song.transpose > 0 -> "  (+${song.transpose})"
-            else -> "  (${song.transpose})"
+            tr == 0 -> ""
+            tr > 0 -> "  (+${tr})"
+            else -> "  (${tr})"
         }
         keyBtn.text = "Do = " + Notes.keyName(target) + shift
         numBtn.text = when (mode()) {
@@ -324,14 +353,14 @@ class SongActivity : AppCompatActivity() {
 
         val sb = SpannableStringBuilder()
         val hasMod = lines.indices.any { Modulation.isChangeAt(lines, song.mods, it) }
-        val header = "Do = ${Notes.keyName(target)}" + (if (song.transpose != 0) "   (asli: ${Notes.keyName(song.key)})" else "") +
+        val header = "Do = ${Notes.keyName(target)}" + (if (tr != 0) "   (asli: ${Notes.keyName(song.key)})" else "") +
             (if (!keyExplicit) "   · kunci terdeteksi otomatis" else "") +
             (if (hasMod) "   · ada modulasi" else "")
         sb.append(header, ForegroundColorSpan(C.MUTED), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         sb.append("\n\n")
         renderedOffset = 2
 
-        rendered = Renderer.render(lines, song.key, song.transpose, mode(), song.mods, song.notes)
+        rendered = Renderer.render(lines, song.key, tr, mode(), song.mods, song.notes)
         if (rendered.none { it.spans.any { s -> s.kind == Span.Kind.CHORD } }) {
             sb.append("(Tidak ada chord yang terbaca di teks ini.)\n\n", ForegroundColorSpan(C.MUTED), 0)
             renderedOffset += 2
@@ -395,7 +424,7 @@ class SongActivity : AppCompatActivity() {
         suggestion = Modulation.suggest(lines, keys, song.mods, song.modDismissed)
         val s = suggestion
         if (s == null) { modBanner.visibility = View.GONE; return }
-        modText.text = "Sepertinya \"${s.sectionName}\" naik ke Do = ${Notes.keyName(s.newKey + song.transpose)}. Pakai?"
+        modText.text = "Sepertinya \"${s.sectionName}\" naik ke Do = ${Notes.keyName(s.newKey + tr)}. Pakai?"
         modBanner.visibility = View.VISIBLE
     }
 
@@ -465,7 +494,7 @@ class SongActivity : AppCompatActivity() {
         val items = ArrayList<String>()
         for (i in 0 until 12) {
             val k = Notes.mod12(song.key + i)
-            val name = "Do = " + Notes.keyName(k + song.transpose)
+            val name = "Do = " + Notes.keyName(k + tr)
             items.add(if (k == cur && hasChange) "$name   (sekarang)" else name)
         }
         if (hasChange) items.add("✕ Hapus modulasi di sini")
@@ -511,7 +540,7 @@ class SongActivity : AppCompatActivity() {
         box.addView(input, lp(MATCH, WRAP).apply { topMargin = dp(8) })
         box.addView(label("Cepat ketik:", 12f, C.MUTED).apply { setPadding(0, dp(8), 0, dp(4)) })
         // Chord bawaan Do yang berlaku + chord penghubung yang sering dipakai (ditulis sesuai transpose)
-        val shown = Notes.mod12(key + song.transpose)
+        val shown = Notes.mod12(key + tr)
         val flats = Notes.useFlats(shown)
         fun n(semi: Int) = Notes.name(shown + semi, flats)
         val quick = listOf(n(0), n(2) + "m", n(4) + "m", n(5), n(7), n(9) + "m", n(7) + "/" + n(11),
@@ -524,7 +553,7 @@ class SongActivity : AppCompatActivity() {
         }
         fun updatePreview() {
             // Teks diketik dalam kunci yang tampil (sudah ditranspose) -> simpan dalam kunci asli
-            val rl = Renderer.renderNote(Note(true, untranspose(input.text.toString())), key, song.transpose, mode())
+            val rl = Renderer.renderNote(Note(true, untranspose(input.text.toString())), key, tr, mode())
             val sb = SpannableStringBuilder(rl.text)
             for (sp in rl.spans) {
                 val col = when (sp.kind) { Span.Kind.CHORD -> C.CHORD; Span.Kind.NUMBER -> C.NUMBER; Span.Kind.NOTE -> C.NOTE; else -> C.MUTED }
@@ -564,10 +593,10 @@ class SongActivity : AppCompatActivity() {
 
     /** Chord yang diketik sesuai tampilan (sudah ditranspose) dikembalikan ke kunci asli lagu. */
     private fun untranspose(text: String): String {
-        if (song.transpose == 0) return text
+        if (tr == 0) return text
         return text.split(Regex("(?<=\\s)|(?=\\s)")).joinToString("") { tok ->
             val c = com.ronald.chordfinder.music.Chord.parse(tok)
-            c?.transpose(-song.transpose)?.format(Notes.useFlats(song.key)) ?: tok
+            c?.transpose(-tr)?.format(Notes.useFlats(song.key)) ?: tok
         }
     }
 
@@ -647,6 +676,246 @@ class SongActivity : AppCompatActivity() {
         micGranted = null
     }
 
+    // --------------------------------------------------- Daftar ibadah
+
+    private fun buildSetNav(): View? {
+        val sl = setlist ?: return null
+        if (setItem == null) return null
+        val bar = hbox().apply {
+            setPadding(dp(8), dp(6), dp(8), dp(6))
+            background = rounded(C.SURFACE2, dpf(14f), dp(1), C.LINE)
+            layoutParams = lp(MATCH, WRAP).apply { setMargins(dp(12), 0, dp(12), dp(8)) }
+        }
+        val n = sl.items.size
+        val prev = small(pill(if (setIndex > 0) "‹ $setIndex" else "‹") { goTo(setIndex - 1) })
+        prev.isEnabled = setIndex > 0; prev.alpha = if (setIndex > 0) 1f else 0.35f
+        bar.addView(prev)
+        val mid = vbox().apply { gravity = Gravity.CENTER; setOnClickListener { finish() } }
+        mid.addView(label("📅 ${Dates.short(sl.date)} · lagu ${setIndex + 1}/$n", 13.5f, C.TEXT, bold = true).apply { gravity = Gravity.CENTER })
+        val nextSong = sl.items.getOrNull(setIndex + 1)?.let { SongStore.get(this, it.songId) }
+        mid.addView(label(if (nextSong != null) "berikutnya: ${nextSong.title}" else "lagu terakhir", 11.5f, C.MUTED).apply {
+            gravity = Gravity.CENTER; maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+        })
+        bar.addView(mid, lp(0, WRAP, 1f))
+        val next = small(pill(if (setIndex + 1 < n) "${setIndex + 2} ›" else "›") { goTo(setIndex + 1) })
+        next.isEnabled = setIndex + 1 < n; next.alpha = if (setIndex + 1 < n) 1f else 0.35f
+        bar.addView(next)
+        return bar
+    }
+
+    private fun goTo(i: Int) {
+        val sl = setlist ?: return
+        val item = sl.items.getOrNull(i) ?: return
+        metro.release()
+        startActivity(Intent(this, SongActivity::class.java)
+            .putExtra(EXTRA_ID, item.songId).putExtra(EXTRA_SETLIST, sl.id).putExtra(EXTRA_INDEX, i))
+        @Suppress("DEPRECATION") overridePendingTransition(0, 0)
+        finish()
+    }
+
+    /** Centang tanggal mana saja lagu ini dimainkan; tampilkan riwayat. */
+    private fun setlistSheet() {
+        if (!saved) save()
+        val (up, past) = SetlistStore.sorted(this)
+        val choices = up + past.take(3)
+        val box = vbox().apply { setPadding(dp(18), dp(4), dp(18), 0) }
+        box.addView(label("Lagu bisa masuk ke beberapa tanggal sekaligus", 12.5f, C.MUTED).apply { setPadding(0, 0, 0, dp(8)) })
+        lateinit var dlg: AlertDialog
+        fun row(sl: Setlist): View {
+            val r = hbox().apply { setPadding(dp(4), dp(10), dp(4), dp(10)); isClickable = true }
+            val check = label("", 14f, C.BG, bold = true).apply { gravity = Gravity.CENTER }
+            fun paint() {
+                val on = sl.items.any { it.songId == song.id }
+                check.text = if (on) "✓" else ""
+                check.background = if (on) rounded(C.CHORD, dpf(6f)) else rounded(0, dpf(6f), dp(2), C.LINE)
+            }
+            paint()
+            r.addView(check, lp(dp(22), dp(22)))
+            val t = vbox().apply { setPadding(dp(12), 0, 0, 0) }
+            t.addView(label(Dates.pretty(sl.date), 14.5f, C.TEXT))
+            t.addView(label("${sl.name} · ${sl.items.size} lagu", 12f, C.MUTED))
+            r.addView(t, lp(0, WRAP, 1f))
+            r.setOnClickListener {
+                if (sl.items.any { it.songId == song.id }) sl.items.removeAll { it.songId == song.id }
+                else sl.items.add(SetItem(song.id))
+                SetlistStore.persist(this); paint()
+            }
+            return r
+        }
+        choices.forEach { box.addView(row(it)) }
+        box.addView(hbox().apply {
+            setPadding(dp(4), dp(10), dp(4), dp(10)); isClickable = true
+            addView(label("+", 15f, C.TEXT, bold = true).apply {
+                gravity = Gravity.CENTER; background = rounded(0, dpf(6f), dp(2), C.LINE)
+            }, lp(dp(22), dp(22)))
+            addView(vbox().apply {
+                setPadding(dp(12), 0, 0, 0)
+                addView(label("Daftar baru…", 14.5f, C.TEXT)); addView(label("pilih tanggal", 12f, C.MUTED))
+            })
+            setOnClickListener {
+                dlg.dismiss()
+                SetlistDialogs.create(this@SongActivity, song.id) {
+                    Toast.makeText(this@SongActivity, "Masuk ke ${Dates.pretty(it.date)}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
+        val played = SetlistStore.containing(this, song.id).filter { Dates.daysFromToday(it.date) < 0 }.sortedByDescending { it.date }
+        if (played.isNotEmpty()) {
+            box.addView(label("PERNAH DIMAINKAN\n" + played.take(6).joinToString(" · ") { Dates.pretty(it.date).substringAfter(", ") },
+                13f, 0xFFC9C6BF.toInt()).apply {
+                setPadding(dp(12), dp(10), dp(12), dp(10)); background = rounded(C.BG, dpf(12f))
+                layoutParams = lp(MATCH, WRAP).apply { topMargin = dp(8) }
+            })
+        }
+        dlg = AlertDialog.Builder(this).setTitle("Simpan ke daftar ibadah")
+            .setView(ScrollView(this).apply { addView(box) })
+            .setPositiveButton("Selesai", null).show()
+    }
+
+    // ------------------------------------------------ Sinkron ke video
+
+    private fun videoNow(): Double =
+        if (vState == 1) vTime + (android.os.SystemClock.elapsedRealtime() - vWall) / 1000.0 else vTime
+
+    /** Dipanggil tiap ~200 ms dari pemutar: metronom ikut play/pause/geser video. */
+    private fun onVideoTick() {
+        if (tapping) return
+        if (vState != 1) {
+            metro.userStopped = false
+            if (metro.syncRunning) metro.stop(byUser = false)
+            return
+        }
+        if (!song.hasSync || !song.syncOn || metro.userStopped) return
+        if (!metro.syncRunning) { metro.startSynced(videoNow()); return }
+        val drift = (videoNow() - song.syncOffset) - metro.syncPosition()
+        // Video digeser / tersendat: mulai ulang di posisi yang benar
+        if (Math.abs(drift) > 0.25) metro.startSynced(videoNow())
+    }
+
+    private fun updateSyncTools() {
+        if (!this::syncBtn.isInitialized) return
+        if (song.hasSync) {
+            syncBtn.text = if (song.syncOn) "♩ Ikut video: ON" else "♩ Ikut video: OFF"
+            syncBtn.background = if (song.syncOn) rounded(C.GO, dpf(18f)) else rounded(C.SURFACE2, dpf(18f), dp(1), C.LINE)
+            syncBtn.setTextColor(if (song.syncOn) 0xFF0B2A14.toInt() else C.TEXT)
+            nudgeBox.visibility = if (song.syncOn) View.VISIBLE else View.GONE
+        } else {
+            syncBtn.text = "♩ Sinkron"
+            syncBtn.background = rounded(C.SURFACE2, dpf(18f), dp(1), C.GO)
+            syncBtn.setTextColor(C.GO)
+            nudgeBox.visibility = View.GONE
+        }
+        small(syncBtn)
+    }
+
+    private fun syncButton() {
+        if (!song.hasSync) { startTap(); return }
+        song.syncOn = !song.syncOn
+        persistIfSaved()
+        if (!song.syncOn && metro.syncRunning) metro.stop(byUser = false)
+        updateSyncTools()
+        Toast.makeText(this, if (song.syncOn) "Metronom ikut video. Tahan tombol ini untuk tandai ulang." else "Metronom tidak ikut video",
+            Toast.LENGTH_SHORT).show()
+    }
+
+    private fun nudge(d: Double) {
+        if (!song.hasSync) return
+        song.syncOffset = (song.syncOffset + d).coerceAtLeast(0.0)
+        persistIfSaved()
+        if (metro.syncRunning) metro.startSynced(videoNow())
+        Toast.makeText(this, if (d < 0) "Metronom dimajukan 20 ms" else "Metronom dimundurkan 20 ms", Toast.LENGTH_SHORT).show()
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun buildTapPanel(): View {
+        tapPanel = vbox().apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(20), dp(18), dp(20), dp(16))
+            setBackgroundColor(0xF20E0E13.toInt())
+            visibility = View.GONE
+            isClickable = true
+        }
+        tapPanel.addView(label("♩ Sinkron metronom ke video", 17f, C.TEXT, bold = true).apply { gravity = Gravity.CENTER })
+        tapPanel.addView(label("Ketuk lingkaran setiap ketukan, mulai tepat di ketukan 1 intro. Minimal 4 ketukan, makin banyak makin pas.",
+            13f, C.MUTED).apply { gravity = Gravity.CENTER; setPadding(0, dp(6), 0, dp(12)) })
+        val size = (resources.displayMetrics.widthPixels * 0.5).toInt().coerceAtMost(dp(230))
+        val pad = vbox().apply {
+            gravity = Gravity.CENTER
+            background = rounded(0x227BE495, size / 2f, dp(3), C.GO)
+        }
+        tapCount = label("0", 52f, C.GO, bold = true).apply { gravity = Gravity.CENTER }
+        pad.addView(tapCount)
+        pad.addView(label("ketukan · ketuk di sini", 12.5f, C.MUTED).apply { gravity = Gravity.CENTER })
+        pad.setOnTouchListener { v, e ->
+            if (e.actionMasked == MotionEvent.ACTION_DOWN) {
+                tapTimes.add(videoNow())
+                v.alpha = 0.6f
+                updateTap()
+            } else if (e.actionMasked == MotionEvent.ACTION_UP || e.actionMasked == MotionEvent.ACTION_CANCEL) v.alpha = 1f
+            true
+        }
+        tapPanel.addView(pad, lp(size, size))
+        tapResult = label("", 14f, C.TEXT).apply { gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(8)) }
+        tapPanel.addView(tapResult)
+        val row = hbox(Gravity.CENTER)
+        row.addView(small(pill("Batal") { endTap(false) }))
+        row.addView(small(pill("↺ Ulang") { tapTimes.clear(); updateTap() }), lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        row.addView(label("✓ Simpan sinkron", 14.5f, 0xFF0B2A14.toInt(), bold = true).apply {
+            setPadding(dp(16), dp(10), dp(16), dp(10))
+            background = rounded(C.GO, dpf(18f))
+            isClickable = true
+            setOnClickListener { endTap(true) }
+        }, lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        tapPanel.addView(row)
+        return tapPanel
+    }
+
+    private fun fmtTime(t: Double): String {
+        val m = (t / 60).toInt(); val sec = t - m * 60
+        return "%d:%04.1f".format(m, sec)
+    }
+
+    private fun updateTap() {
+        tapCount.text = "${tapTimes.size}"
+        val r = com.ronald.chordfinder.music.TapSync.fit(tapTimes)
+        tapResult.text = if (r == null) "Tempo & posisi ketukan 1 muncul setelah 4 ketukan"
+        else "%.1f BPM  ·  bar 1 mulai di %s".format(r.bpm, fmtTime(r.offset))
+    }
+
+    private fun startTap() {
+        if (song.ytId.isEmpty()) { pickerDialog(); return }
+        if (playerBox.visibility != View.VISIBLE || vState != 1) {
+            if (playerBox.visibility != View.VISIBLE) openPlayer()
+            Toast.makeText(this, "Putar videonya, lalu tekan ♩ Sinkron lagi saat lagu mulai.", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (metro.syncRunning || metro.isRunning) metro.stop(byUser = false)
+        tapping = true
+        tapTimes.clear()
+        updateTap()
+        tapPanel.visibility = View.VISIBLE
+    }
+
+    private fun endTap(save: Boolean) {
+        val r = com.ronald.chordfinder.music.TapSync.fit(tapTimes)
+        if (save && r == null) {
+            Toast.makeText(this, "Ketuk minimal 4 ketukan dulu", Toast.LENGTH_SHORT).show(); return
+        }
+        tapping = false
+        tapPanel.visibility = View.GONE
+        if (!save || r == null) return
+        song.syncBpm = r.bpm
+        song.syncOffset = r.offset.coerceAtLeast(0.0)
+        song.syncVideo = song.ytId
+        song.syncOn = true
+        song.bpm = Math.round(r.bpm).toInt()
+        if (!saved) save() else persistIfSaved()
+        metro.userStopped = false
+        updateSyncTools()
+        metro.refreshButton()
+        Toast.makeText(this, "Tersimpan. Metronom akan ikut video ini.", Toast.LENGTH_SHORT).show()
+    }
+
     // --------------------------------------------------------- YouTube
 
     private fun buildYtCard(): View {
@@ -682,6 +951,13 @@ class SongActivity : AppCompatActivity() {
         val tools = hbox().apply { setPadding(dp(12), dp(8), dp(12), dp(8)) }
         tools.addView(small(pill("⟲ 10 dtk") { player?.evaluateJavascript("back10()", null) }))
         tools.addView(small(pill("Ganti video") { pickerDialog() }), lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        syncBtn = small(pill("♩ Sinkron") { syncButton() })
+        syncBtn.setOnLongClickListener { startTap(); true }
+        tools.addView(syncBtn, lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        nudgeBox = hbox()
+        nudgeBox.addView(small(pill("◂ 20ms") { nudge(-0.02) }), lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        nudgeBox.addView(small(pill("20ms ▸") { nudge(0.02) }), lp(WRAP, WRAP).apply { leftMargin = dp(6) })
+        tools.addView(nudgeBox)
         tools.addView(small(pill("YouTube ↗") { openInYouTube() }), lp(WRAP, WRAP).apply { leftMargin = dp(6) })
         tools.addView(View(this), lp(0, 1, 1f))
         tools.addView(small(pill("✕") { closePlayer() }))
@@ -748,6 +1024,7 @@ class SongActivity : AppCompatActivity() {
     }
 
     private fun setVideo(v: Video) {
+        if (metro.syncRunning) metro.stop(byUser = false)
         song.ytId = v.id
         song.ytTitle = v.title
         song.ytChannel = v.channel
@@ -787,10 +1064,13 @@ class SongActivity : AppCompatActivity() {
         }
         player!!.loadDataWithBaseURL(YouTube.ORIGIN + "/", YouTube.playerHtml(song.ytId), "text/html", "utf-8", null)
         playerBox.visibility = View.VISIBLE
+        updateSyncTools()
         updateYtCard()
     }
 
     private fun closePlayer() {
+        vState = -1
+        if (metro.syncRunning) metro.stop(byUser = false)
         player?.evaluateJavascript("pause()", null)
         player?.loadUrl("about:blank")
         playerBox.visibility = View.GONE
@@ -810,6 +1090,14 @@ class SongActivity : AppCompatActivity() {
         fun state(s: Int) = runOnUiThread {
             playing = s == 1 || s == 3
             updateYtButton()
+        }
+
+        @JavascriptInterface
+        fun time(t: Double, st: Int) = runOnUiThread {
+            vTime = t
+            vWall = android.os.SystemClock.elapsedRealtime()
+            vState = st
+            onVideoTick()
         }
 
         @JavascriptInterface
@@ -952,10 +1240,10 @@ class SongActivity : AppCompatActivity() {
     // ---------------------------------------------------------- Aksi
 
     private fun transpose(d: Int) {
-        var t = song.transpose + d
+        var t = tr + d
         if (t > 11) t -= 12
         if (t < -11) t += 12
-        song.transpose = t
+        tr = t
         persistIfSaved()
         render()
     }
@@ -1064,6 +1352,7 @@ class SongActivity : AppCompatActivity() {
         if (song.source.isNotBlank()) pm.menu.add(0, 1, 0, "Buka halaman sumber")
         pm.menu.add(0, 2, 1, "Edit teks chord")
         pm.menu.add(0, 3, 2, "Ganti judul")
+        pm.menu.add(0, 9, 3, "📅 Simpan ke daftar ibadah")
         pm.menu.add(0, 6, 3, "Pilih video YouTube")
         pm.menu.add(0, 7, 3, "Catatan lagu")
         pm.menu.add(0, 8, 3, "Metronom")
@@ -1076,6 +1365,7 @@ class SongActivity : AppCompatActivity() {
                 3 -> renameDialog()
                 5 -> share()
                 6 -> pickerDialog()
+                9 -> setlistSheet()
                 7 -> songNoteDialog()
                 8 -> metro.openSheet()
                 4 -> AlertDialog.Builder(this)
@@ -1089,11 +1379,11 @@ class SongActivity : AppCompatActivity() {
     }
 
     private fun share() {
-        val text = Renderer.render(lines, song.key, song.transpose, mode(), song.mods, song.notes).joinToString("\n") { it.text }
+        val text = Renderer.render(lines, song.key, tr, mode(), song.mods, song.notes).joinToString("\n") { it.text }
         val yt = if (song.ytId.isNotEmpty()) "\nYouTube: https://youtu.be/${song.ytId}" else ""
         val tempo = if (song.bpm > 0) "\nTempo: ${song.bpm} BPM" + (if (song.sigBeats > 0) " · ${song.sigBeats}/${song.sigUnit}" else "") else ""
         val note = if (song.songNote.isNotBlank()) "\nCatatan: ${song.songNote}" else ""
-        val full = "${song.title}\nDo = ${Notes.keyName(song.key + song.transpose)}$tempo$yt$note\n\n$text"
+        val full = "${song.title}\nDo = ${Notes.keyName(song.key + tr)}$tempo$yt$note\n\n$text"
         startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, full)

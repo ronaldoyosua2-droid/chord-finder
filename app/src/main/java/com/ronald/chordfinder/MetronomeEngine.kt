@@ -138,12 +138,16 @@ class MetronomeEngine(private val ctx: Context) {
 
     // ------------------------------------------------------------ main
 
-    fun start(config: MetroConfig, sound: String, voiceLabel: String, listener: Listener) {
+    /**
+     * @param startAt posisi awal di garis waktu (detik). Untuk sinkron video: waktu video - offset bar 1.
+     *                Boleh negatif (bar 1 belum mulai).
+     */
+    fun start(config: MetroConfig, sound: String, voiceLabel: String, listener: Listener, startAt: Double = 0.0) {
         stop()
         running = true
         val clicks = arrayOf(click(sound, 0), click(sound, 1), click(sound, 2))
         val words = voice(voiceLabel)
-        thread = Thread({ loop(config, clicks, words, listener) }, "metronom").apply {
+        thread = Thread({ loop(config, clicks, words, listener, startAt) }, "metronom").apply {
             priority = Thread.MAX_PRIORITY
             start()
         }
@@ -157,7 +161,7 @@ class MetronomeEngine(private val ctx: Context) {
 
     private class Playing(val data: FloatArray, var pos: Int, val gain: Float)
 
-    private fun loop(c: MetroConfig, clicks: Array<FloatArray>, words: Map<String, FloatArray>, l: Listener) {
+    private fun loop(c: MetroConfig, clicks: Array<FloatArray>, words: Map<String, FloatArray>, l: Listener, startAt: Double) {
         val minBuf = AudioTrack.getMinBufferSize(SR, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
         val builder = AudioTrack.Builder()
             .setAudioAttributes(
@@ -184,11 +188,20 @@ class MetronomeEngine(private val ctx: Context) {
         val pcm = ShortArray(chunk)
         val active = ArrayList<Playing>()
         val pending = ArrayList<Ev>()
-        var nextBar = if (c.countIn) -1 else 0
-        var frame = 0L
+        val latencyMs = (track.bufferSizeInFrames.toLong() * 1000 / SR)
+        // Mulai di tengah lagu: lompat ke bar yang sesuai, dan majukan sebesar latensi audio
+        // supaya bunyi yang keluar dari speaker pas dengan posisi video.
+        val startT = if (startAt != 0.0) startAt + latencyMs / 1000.0 else 0.0
+        val barSec = c.beats * tl.beatSec
+        var nextBar = when {
+            c.countIn && startT <= 0.0 -> -1
+            startT <= 0.0 -> 0
+            else -> tl.barAt(startT).coerceAtLeast(0)
+        }
+        var frame = (startT * SR).toLong()
+        val firstFrame = frame
         var endFrame = Long.MAX_VALUE
         var timelineDone = false
-        val latencyMs = (track.bufferSizeInFrames.toLong() * 1000 / SR)
         track.play()
         try {
             while (running) {
@@ -206,8 +219,10 @@ class MetronomeEngine(private val ctx: Context) {
                     val ef = (e.t * SR).toLong()
                     if (ef >= chunkEnd) break
                     it.remove()
+                    // Kejadian sebelum titik mulai (mulai di tengah bar): bunyi dilewati
+                    if (ef < firstFrame && e !is Ev.Section && e !is Ev.End) continue
                     val offset = (ef - frame).toInt().coerceAtLeast(0)
-                    val delay = (ef - frame) * 1000 / SR + latencyMs
+                    val delay = ((ef - frame) * 1000 / SR + latencyMs).coerceAtLeast(0)
                     when (e) {
                         is Ev.Click -> active.add(Playing(clicks[if (e.sub) 0 else if (e.accent) 2 else 1], -offset, 1f))
                         is Ev.Count -> words[e.n.toString()]?.let { w -> active.add(Playing(w, -offset, 0.95f)) }

@@ -160,6 +160,10 @@ function onYouTubeIframeAPIReady(){
 function back10(){ if(player&&player.getCurrentTime){player.seekTo(Math.max(0,player.getCurrentTime()-10),true)} }
 function toggle(){ if(!player||!player.getPlayerState)return; if(player.getPlayerState()==1){player.pauseVideo()}else{player.playVideo()} }
 function pause(){ if(player&&player.pauseVideo)player.pauseVideo() }
+// Laporkan posisi video ke aplikasi (untuk sinkron metronom)
+setInterval(function(){
+  try { if(player&&player.getCurrentTime){ Android.time(player.getCurrentTime(), player.getPlayerState()) } } catch(e){}
+}, 200);
 </script></body></html>
 """.trimIndent()
 

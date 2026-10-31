@@ -55,3 +55,21 @@ class MetroTest {
         assertTrue(r.any { it.text == "✎ G/B(5/7) → C#dim(#1°)" })
     }
 }
+
+class TapSyncTest {
+    @Test fun fitsTapsWithJitterAndMissedBeat() {
+        val beat = 60.0 / 76.4
+        val start = 4.3
+        val rnd = java.util.Random(3)
+        val taps = (0 until 12).filter { it != 5 }.map { start + it * beat + (rnd.nextDouble() - 0.5) * 0.04 }
+        val r = TapSync.fit(taps)!!
+        assertEquals(76.4, r.bpm, 0.4)
+        assertEquals(start, r.offset, 0.03)
+    }
+
+    @Test fun midSongStartUsesFloorBar() {
+        val tl = Timeline(MetroConfig(bpm = 60, countIn = false))
+        assertEquals(2, tl.barAt(9.5))
+        assertEquals(-1, tl.barAt(-0.5))
+    }
+}

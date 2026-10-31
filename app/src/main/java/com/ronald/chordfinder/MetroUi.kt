@@ -48,6 +48,37 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
     private var config = MetroConfig()
     private val taps = ArrayList<Long>()
 
+    /** Sedang jalan mengikuti video. [syncStartAt] posisi garis waktu saat mulai, [syncWall] jam saat mulai. */
+    var syncRunning = false
+        private set
+    private var syncStartAt = 0.0
+    private var syncWall = 0L
+
+    /** Posisi garis waktu metronom sekarang (detik), untuk dibandingkan dengan video. */
+    fun syncPosition(): Double = syncStartAt + (SystemClock.elapsedRealtime() - syncWall) / 1000.0
+
+    /** Mulai mengikuti video. [videoTime] = posisi video sekarang (detik). */
+    fun startSynced(videoTime: Double) {
+        val s = host.song
+        config = buildConfig().copy(
+            bpm = Math.round(s.syncBpm).toInt(), bpmExact = s.syncBpm, countIn = false,
+        )
+        syncStartAt = videoTime - s.syncOffset
+        syncWall = SystemClock.elapsedRealtime()
+        syncRunning = true
+        rebuildDots()
+        barBpm.text = "♩ ${config.bpm}"
+        barSection.text = "🔗 video"
+        beatBar.visibility = View.VISIBLE
+        overlay.visibility = View.GONE
+        engine.start(config, Prefs.sound(a), Prefs.voice(a), this, startAt = if (syncStartAt == 0.0) 1e-6 else syncStartAt)
+        updateButton()
+        if (config.useSequence) {
+            val bar = Math.floor(syncStartAt / (config.beats * 60.0 / s.syncBpm)).toInt()
+            sectionForBar(bar)?.first?.let { if (Prefs.followScroll(a) && it.line >= 0) host.scrollToLine(it.line) }
+        }
+    }
+
     companion object {
         val CUES = listOf(
             "" to "— (tanpa aba-aba)", "intro" to "Intro", "verse" to "Verse", "prechorus" to "Pre-Chorus",
@@ -170,7 +201,14 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
         if (config.useSequence) config.sequence.firstOrNull()?.let { if (Prefs.followScroll(a) && it.line >= 0) host.scrollToLine(it.line) }
     }
 
-    fun stop() {
+    /** Pengguna menekan Stop saat metronom ikut video: jangan langsung jalan lagi sampai video dijeda. */
+    var userStopped = false
+
+    fun refreshButton() = updateButton()
+
+    fun stop(byUser: Boolean = true) {
+        if (byUser && syncRunning) userStopped = true
+        syncRunning = false
         engine.stop()
         beatBar.visibility = View.GONE
         overlay.visibility = View.GONE
@@ -206,12 +244,16 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
             overlay.visibility = View.GONE
             if (config.useSequence) {
                 val tlSec = sectionForBar(bar)
-                if (tlSec != null) barSection.text = "${tlSec.first.name} · bar ${tlSec.second}/${tlSec.first.bars}"
+                if (tlSec != null) barSection.text = (if (syncRunning) "🔗 " else "") +
+                    "${tlSec.first.name} · bar ${tlSec.second}/${tlSec.first.bars}"
+            } else if (syncRunning) {
+                barSection.text = "🔗 video · bar ${bar + 1}"
             }
         }
     }
 
     private fun sectionForBar(bar: Int): Pair<SeqItem, Int>? {
+        if (bar < 0) return null
         var b = 0
         for (s in config.sequence) {
             if (bar < b + s.bars) return s to (bar - b + 1)

@@ -41,6 +41,11 @@ data class Song(
     var pattern: String = "",          // mis. "ANNN" (A = aksen, N = biasa, M = diam)
     var seq: MutableList<SeqItem> = ArrayList(),
     var useSeq: Boolean = false,
+    // Sinkron metronom ke video: detik di video tempat bar 1 ketukan 1 dimulai (-1 = belum)
+    var syncOffset: Double = -1.0,
+    var syncBpm: Double = 0.0,
+    var syncVideo: String = "",
+    var syncOn: Boolean = true,
 ) {
     @Transient private var index: String? = null
 
@@ -70,7 +75,11 @@ data class Song(
             seq.forEach { put(JSONObject().put("n", it.name).put("b", it.bars).put("c", it.cue).put("l", it.line)) }
         })
         put("useSeq", useSeq)
+        put("syncOffset", syncOffset); put("syncBpm", syncBpm); put("syncVideo", syncVideo); put("syncOn", syncOn)
     }
+
+    /** Sinkron hanya berlaku untuk video yang ditandai. */
+    val hasSync get() = syncOffset >= 0 && syncVideo.isNotEmpty() && syncVideo == ytId && syncBpm > 0
 
     fun stepPattern(beats: Int): List<Step> = List(beats) { i ->
         when (pattern.getOrNull(i)) {
@@ -127,6 +136,10 @@ data class Song(
                 }
             },
             useSeq = o.optBoolean("useSeq", false),
+            syncOffset = o.optDouble("syncOffset", -1.0),
+            syncBpm = o.optDouble("syncBpm", 0.0),
+            syncVideo = o.optString("syncVideo"),
+            syncOn = o.optBoolean("syncOn", true),
         )
     }
 }
@@ -170,6 +183,16 @@ object SongStore {
 
     fun delete(ctx: Context, id: String) {
         all(ctx).removeAll { it.id == id }
+        persist(ctx)
+        SetlistStore.removeSong(ctx, id)
+    }
+
+    /** Untuk impor: simpan apa adanya (tanpa mengubah waktu 'updated'). */
+    fun importSong(ctx: Context, song: Song) {
+        val list = all(ctx)
+        song.invalidate()
+        val i = list.indexOfFirst { it.id == song.id }
+        if (i >= 0) list[i] = song else list.add(song)
         persist(ctx)
     }
 

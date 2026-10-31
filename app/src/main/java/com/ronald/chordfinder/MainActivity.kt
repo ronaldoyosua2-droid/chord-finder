@@ -25,6 +25,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -40,7 +41,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var libraryPane: LinearLayout
     private lateinit var libraryList: LinearLayout
     private lateinit var libraryEmpty: TextView
-    private lateinit var starFilter: TextView
+    private lateinit var libTabs: List<TextView>
+    private lateinit var libFab: TextView
     private lateinit var web: WebView
     private lateinit var progress: ProgressBar
     private lateinit var foundBar: LinearLayout
@@ -49,7 +51,8 @@ class MainActivity : AppCompatActivity() {
     private val sourceChips = ArrayList<TextView>()
 
     private var onlineMode = true
-    private var onlyStarred = false
+    /** 0 = Semua lagu, 1 = Daftar ibadah, 2 = Favorit */
+    private var libTab = 0
     private var lastQuery = ""
     private var found: JSONObject? = null
     private val autoOpened = HashSet<String>()
@@ -98,9 +101,9 @@ class MainActivity : AppCompatActivity() {
         // Judul
         val header = hbox().apply { setPadding(dp(16), dp(14), dp(16), dp(4)) }
         header.addView(label("Chord Finder", 22f, C.TEXT, bold = true), lp(0, WRAP, 1f))
-        header.addView(label("Do = 1", 13f, C.NUMBER).apply {
-            setPadding(dp(10), dp(4), dp(10), dp(4))
-            background = rounded(C.SURFACE2, dpf(12f))
+        header.addView(label("⋮", 22f, C.TEXT).apply {
+            setPadding(dp(14), dp(2), dp(4), dp(2))
+            setOnClickListener { v -> mainMenu(v) }
         })
         root.addView(header)
 
@@ -210,16 +213,14 @@ class MainActivity : AppCompatActivity() {
         // ---- Panel koleksi
         libraryPane = vbox()
         val libTools = hbox().apply { setPadding(dp(16), 0, dp(16), dp(8)) }
-        starFilter = pill("★ Minggu ini") {
-            onlyStarred = !onlyStarred
-            refreshLibrary()
-        }.apply { setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f) }
-        libTools.addView(starFilter)
-        libTools.addView(View(this), lp(0, 1, 1f))
-        libTools.addView(pill("+ Tempel chord") { pasteDialog() }.apply {
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-        })
-        libraryPane.addView(libTools)
+        libTabs = listOf("Semua lagu", "📅 Daftar ibadah", "★ Favorit").mapIndexed { i, t ->
+            pill(t) { libTab = i; refreshLibrary() }.apply {
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                setPadding(dp(11), dp(7), dp(11), dp(7))
+            }
+        }
+        libTabs.forEachIndexed { i, v -> libTools.addView(v, lp(WRAP, WRAP).apply { if (i > 0) leftMargin = dp(6) }) }
+        libraryPane.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(libTools) })
 
         val scroll = ScrollView(this)
         val scrollInner = vbox().apply { setPadding(dp(12), 0, dp(12), dp(24)) }
@@ -233,6 +234,18 @@ class MainActivity : AppCompatActivity() {
         scroll.addView(scrollInner)
         libraryPane.addView(scroll, lp(MATCH, 0, 1f))
         content.addView(libraryPane, FrameLayout.LayoutParams(MATCH, MATCH))
+        libFab = label("", 15f, C.BG, bold = true).apply {
+            setPadding(dp(18), dp(13), dp(18), dp(13))
+            background = rounded(C.CHORD, dpf(18f))
+            elevation = dpf(6f)
+            isClickable = true
+            setOnClickListener {
+                if (libTab == 1) SetlistDialogs.create(this@MainActivity) { openSetlist(it) } else pasteDialog()
+            }
+        }
+        content.addView(libFab, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.BOTTOM or Gravity.END).apply {
+            setMargins(dp(16), dp(16), dp(16), dp(16))
+        })
 
         updateChips()
         return root
@@ -244,6 +257,7 @@ class MainActivity : AppCompatActivity() {
         tabLibrary.setPill(!online)
         onlinePane.visibility = if (online) View.VISIBLE else View.GONE
         libraryPane.visibility = if (online) View.GONE else View.VISIBLE
+        libFab.visibility = libraryPane.visibility
         search.hint = if (online) "Judul atau potongan lirik…" else "Cari di koleksi (judul / lirik)…"
         if (!online) refreshLibrary()
     }
@@ -352,35 +366,141 @@ class MainActivity : AppCompatActivity() {
     private fun filteredSongs(): List<Song> {
         val q = search.text.toString()
         return SongStore.all(this)
-            .filter { !onlyStarred || it.starred }
+            .filter { libTab != 2 || it.starred }
             .filter { com.ronald.chordfinder.music.TextSearch.matches(it.searchIndex(), q) }
             .sortedWith(compareByDescending<Song> { it.starred }.thenBy { it.title.lowercase() })
     }
 
     private fun refreshLibrary() {
-        starFilter.setPill(onlyStarred)
+        libTabs.forEachIndexed { i, v -> v.setPill(i == libTab); v.setPadding(dp(11), dp(7), dp(11), dp(7)) }
+        libFab.text = if (libTab == 1) "+ Daftar baru" else "+ Tempel chord"
         libraryList.removeAllViews()
+        if (libTab == 1) { refreshSetlists(); return }
         val all = SongStore.all(this)
         val list = filteredSongs()
         libraryEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         libraryEmpty.text = when {
             all.isEmpty() -> "Koleksi masih kosong.\n\nCari lagu di tab Cari Online, buka chord-nya, lalu tekan Simpan. " +
                 "Setelah itu lagu bisa dicari di sini kapan saja, tanpa internet."
-            onlyStarred && search.text.isBlank() -> "Belum ada lagu untuk Minggu ini.\nTekan ★ saat membuka lagu."
+            libTab == 2 && search.text.isBlank() -> "Belum ada lagu favorit.\nTekan ☆ pada lagu untuk menandainya."
             else -> "Tidak ada yang cocok di koleksi.\nTekan Cari untuk mencarinya online."
         }
-        if (onlyStarred && list.isNotEmpty()) {
-            libraryList.addView(label("Kosongkan daftar Minggu ini", 13f, C.MUTED).apply {
-                setPadding(dp(8), dp(4), dp(8), dp(10))
-                setOnClickListener {
-                    AlertDialog.Builder(this@MainActivity)
-                        .setMessage("Hapus tanda ★ dari semua lagu? Lagunya tetap ada di koleksi.")
-                        .setPositiveButton("Kosongkan") { _, _ -> SongStore.clearStars(this@MainActivity); refreshLibrary() }
-                        .setNegativeButton("Batal", null).show()
-                }
-            })
-        }
         for (s in list) libraryList.addView(songRow(s))
+        libraryList.addView(View(this), lp(MATCH, dp(70)))
+    }
+
+    private fun openSetlist(s: Setlist) {
+        startActivity(Intent(this, SetlistActivity::class.java).putExtra(SetlistActivity.EXTRA_ID, s.id))
+    }
+
+    /** Tab Daftar ibadah: akan datang (terdekat dulu) lalu yang sudah lewat. Pencarian = judul lagu di dalamnya. */
+    private fun refreshSetlists() {
+        val q = search.text.toString()
+        fun match(s: Setlist) = q.isBlank() ||
+            com.ronald.chordfinder.music.TextSearch.matches(com.ronald.chordfinder.music.TextSearch.normalize(
+                Dates.pretty(s.date) + " " + s.name + " " + s.items.mapNotNull { SongStore.get(this, it.songId)?.title }.joinToString(" ")), q)
+        val (up, past) = SetlistStore.sorted(this)
+        val u = up.filter(::match); val p = past.filter(::match)
+        libraryEmpty.visibility = if (u.isEmpty() && p.isEmpty()) View.VISIBLE else View.GONE
+        libraryEmpty.text = if (q.isBlank()) "Belum ada daftar ibadah.\n\nTekan + Daftar baru untuk membuat daftar lagu Minggu ini."
+            else "Tidak ada daftar yang cocok."
+        fun header(t: String) = label(t, 12f, C.MUTED).apply { setPadding(dp(4), dp(6), dp(4), dp(6)); letterSpacing = 0.05f }
+        if (u.isNotEmpty()) libraryList.addView(header("AKAN DATANG"))
+        u.forEachIndexed { i, s -> libraryList.addView(setlistCard(s, highlight = i == 0)) }
+        if (p.isNotEmpty()) libraryList.addView(header("SUDAH LEWAT"))
+        p.forEach { libraryList.addView(setlistCard(it, highlight = false, dim = true)) }
+        libraryList.addView(View(this), lp(MATCH, dp(70)))
+    }
+
+    private fun setlistCard(s: Setlist, highlight: Boolean, dim: Boolean = false): View {
+        val card = vbox().apply {
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = if (highlight) rounded(C.SURFACE, dpf(14f), dp(1), C.CHORD) else rounded(C.SURFACE, dpf(14f))
+            alpha = if (dim) 0.8f else 1f
+            isClickable = true
+            setOnClickListener { openSetlist(s) }
+            setOnLongClickListener {
+                AlertDialog.Builder(this@MainActivity).setTitle(Dates.pretty(s.date))
+                    .setItems(arrayOf("Ubah tanggal / nama", "Hapus daftar")) { _, w ->
+                        if (w == 0) SetlistDialogs.edit(this@MainActivity, s) { SetlistStore.persist(this@MainActivity); refreshLibrary() }
+                        else AlertDialog.Builder(this@MainActivity).setMessage("Hapus daftar ini? Lagunya tetap ada di Koleksi.")
+                            .setPositiveButton("Hapus") { _, _ -> SetlistStore.delete(this@MainActivity, s.id); refreshLibrary() }
+                            .setNegativeButton("Batal", null).show()
+                    }.show()
+                true
+            }
+        }
+        val d = Dates.daysFromToday(s.date)
+        val tag = when (d) { 0 -> "HARI INI"; 1 -> "BESOK"; else -> null }
+        val title = android.text.SpannableStringBuilder(Dates.pretty(s.date))
+        if (tag != null) {
+            title.append("  ")
+            val st = title.length
+            title.append(" $tag ")
+            title.setSpan(android.text.style.BackgroundColorSpan(C.CHORD), st, title.length, 0)
+            title.setSpan(android.text.style.ForegroundColorSpan(C.BG), st, title.length, 0)
+            title.setSpan(android.text.style.RelativeSizeSpan(0.7f), st, title.length, 0)
+        }
+        card.addView(label("", 16f, C.TEXT, bold = true).apply { text = title })
+        card.addView(label("${s.name} · ${s.items.size} lagu", 12.5f, C.MUTED))
+        if (!dim && s.items.isNotEmpty()) {
+            val names = s.items.mapNotNull { SongStore.get(this, it.songId)?.title }
+            val shown = names.take(3).mapIndexed { i, n -> "${i + 1}. $n" }.joinToString(" · ") +
+                if (names.size > 3) " · +${names.size - 3}" else ""
+            card.addView(label(shown, 13f, 0xFFC9C6BF.toInt()).apply { setPadding(0, dp(6), 0, 0); maxLines = 2 })
+        }
+        card.layoutParams = lp(MATCH, WRAP).apply { bottomMargin = dp(8) }
+        return card
+    }
+
+    // ------------------------------------------------ Ekspor / Impor
+
+    private val exportLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        try {
+            contentResolver.openOutputStream(uri, "wt")!!.use { it.write(Backup.export(this).toByteArray()) }
+            AlertDialog.Builder(this).setTitle("✓ Ekspor berhasil")
+                .setMessage("${SongStore.all(this).size} lagu · ${SetlistStore.all(this).size} daftar ibadah\n\n" +
+                    "Simpan file ini di tempat aman (Google Drive, WA ke diri sendiri). Pakai Impor Koleksi untuk memulihkannya.")
+                .setPositiveButton("OK", null).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Gagal menyimpan: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private val importLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        try {
+            val text = contentResolver.openInputStream(uri)!!.use { it.readBytes().toString(Charsets.UTF_8) }
+            val r = Backup.import(this, text)
+            refreshLibrary()
+            AlertDialog.Builder(this).setTitle("✓ Impor selesai")
+                .setMessage("Lagu: ${r.songsAdded} baru, ${r.songsUpdated} diperbarui\n" +
+                    "Daftar ibadah: ${r.setlistsAdded} baru, ${r.setlistsUpdated} diperbarui")
+                .setPositiveButton("OK", null).show()
+        } catch (e: Exception) {
+            AlertDialog.Builder(this).setTitle("Impor gagal")
+                .setMessage("File ini bukan hasil Ekspor Koleksi Chord Finder, atau rusak.")
+                .setPositiveButton("OK", null).show()
+        }
+    }
+
+    private fun mainMenu(anchor: View) {
+        val pm = android.widget.PopupMenu(this, anchor)
+        pm.menu.add(0, 1, 0, "⤓ Ekspor Koleksi")
+        pm.menu.add(0, 2, 1, "⤒ Impor Koleksi")
+        pm.setOnMenuItemClickListener {
+            when (it.itemId) {
+                1 -> exportLauncher.launch("ChordFinder-koleksi-${Dates.today()}.json")
+                2 -> importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream", "*/*"))
+            }
+            true
+        }
+        pm.show()
     }
 
     private fun songRow(s: Song): View {
