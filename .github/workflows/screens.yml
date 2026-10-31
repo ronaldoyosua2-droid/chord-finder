@@ -28,7 +28,8 @@ jobs:
       - name: Build APK
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          gradle :app:testReleaseUnitTest :app:assembleRelease -q
+          set -o pipefail
+          gradle :app:testReleaseUnitTest :app:assembleRelease -q 2>&1 | tee build.log
           mkdir -p out && cp app/build/outputs/apk/release/app-release.apk out/app.apk
 
       - name: Diagnosa YouTube
@@ -54,6 +55,9 @@ jobs:
       - name: Simpan SS ke branch screenshots
         if: always()
         run: |
+          mkdir -p shots
+          cp build.log shots/ 2>/dev/null || true
+          grep -E "^e: |error:|FAILED|Exception" build.log > shots/errors.txt 2>/dev/null || true
           cd shots
           git init -q -b screenshots
           git config user.name "github-actions"
