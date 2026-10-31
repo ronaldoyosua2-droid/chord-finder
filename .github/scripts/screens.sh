@@ -20,7 +20,9 @@ t=sys.argv[1]; x=open('ui.xml',encoding='utf-8').read()
 for m in re.finditer(r'<node [^>]*>', x):
     n=m.group(0)
     tm=re.search(r'text="([^"]*)"', n)
-    if tm and tm.group(1).lower().startswith(t.lower()):
+    import html
+    v = html.unescape(tm.group(1)).lower() if tm else ''
+    if tm and (v.startswith(t.lower()) or (len(t) > 4 and t.lower() in v)):
         a=list(map(int,re.findall(r'\d+', re.search(r'bounds="([^"]*)"',n).group(1))))
         print((a[0]+a[2])//2, (a[1]+a[3])//2); break
 PY
@@ -111,7 +113,7 @@ adb shell restorecon -R $D || true
 adb shell am start -W -n $PKG/.MainActivity
 sleep 2
 tap_text "Koleksi"; sleep 1
-tap_text "📅 Daftar"
+tap_text "Daftar ibadah"
 shot 17-daftar-ibadah 2
 tap_text "Minggu,"
 shot 18-isi-daftar 2
