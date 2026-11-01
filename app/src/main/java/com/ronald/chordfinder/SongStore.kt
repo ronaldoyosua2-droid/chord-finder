@@ -18,6 +18,8 @@ data class Song(
     var raw: String,
     /** Kunci asli (pitch class 0-11), -1 = belum ditentukan */
     var key: Int = -1,
+    /** Kunci dipilih sendiri lewat tombol Do = … (jangan diubah otomatis) */
+    var keyUser: Boolean = false,
     var transpose: Int = 0,
     var starred: Boolean = false,
     var updated: Long = System.currentTimeMillis(),
@@ -57,7 +59,7 @@ data class Song(
 
     fun toJson() = JSONObject().apply {
         put("id", id); put("title", title); put("source", source); put("raw", raw)
-        put("key", key); put("transpose", transpose); put("starred", starred); put("updated", updated)
+        put("key", key); put("keyUser", keyUser); put("transpose", transpose); put("starred", starred); put("updated", updated)
         put("query", query)
         put("mods", JSONObject().apply { mods.forEach { (k, v) -> put(k.toString(), v) } })
         put("modDismissed", JSONArray().apply { modDismissed.forEach { put(it) } })
@@ -99,6 +101,7 @@ data class Song(
             source = o.optString("source"),
             raw = o.optString("raw"),
             key = o.optInt("key", -1),
+            keyUser = o.optBoolean("keyUser", false),
             transpose = o.optInt("transpose", 0),
             starred = o.optBoolean("starred", false),
             updated = o.optLong("updated", 0L),

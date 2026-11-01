@@ -257,14 +257,31 @@ object KeyDetector {
             "\\s*[:=]?\\s*=?\\s*([A-G])([#b]?)(m(?!aj)|min)?(?![A-Za-z#])"
     )
 
-    data class Result(val keyPc: Int, val explicit: Boolean)
+    /**
+     * @param explicit kunci tertulis di teks dan cocok dengan chord-nya
+     * @param pageKey kunci yang tertulis di halaman tapi TIDAK cocok dengan chord (diabaikan), atau null
+     */
+    data class Result(val keyPc: Int, val explicit: Boolean, val pageKey: Int? = null)
 
     fun detect(raw: String, lines: List<Line>): Result? {
-        explicit(raw)?.let { return Result(it, true) }
         // Tebak hanya dari chord sebelum modulasi pertama
         val firstMod = lines.indexOfFirst { it is Line.KeyChange }
         val before = if (firstMod > 0) SongParser.allChords(lines.subList(0, firstMod)) else emptyList()
         val chords = if (before.size >= 3) before else SongParser.allChords(lines)
+        val ex = explicit(raw)
+        if (ex != null) {
+            // Kunci tertulis dicek dengan chord-nya: situs kadang menulis kunci asli
+            // padahal chord yang ditampilkan sudah ditranspose.
+            if (chords.size >= 6) {
+                val inf = infer(chords)
+                if (inf != ex) {
+                    val se = chords.sumOf { fit(it, ex) }
+                    val si = chords.sumOf { fit(it, inf) }
+                    if (si - se >= maxOf(4.0, chords.size * 0.3)) return Result(inf, false, pageKey = ex)
+                }
+            }
+            return Result(ex, true)
+        }
         if (chords.isEmpty()) return null
         return Result(infer(chords), false)
     }

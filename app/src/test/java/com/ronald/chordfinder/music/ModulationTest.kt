@@ -110,3 +110,20 @@ class DimTest {
         assertEquals("#1°", num("A#dim", 9))
     }
 }
+
+class WrongPageKeyTest {
+    @Test fun chordsOverrideWrongWrittenKey() {
+        val raw = "Do = F\n[Intro]\n| A   E/Ab A . . | A  E/Ab A . . |\n| Gbm  E   D . . | D E  Gbm A/Db D |\n" +
+            "[Verse 1]\n     Gbm   E    D\nJiwa\n        E     D\nKuasa\n     Bm\nNama\n     A/Db  A/E\nx"
+        val r = KeyDetector.detect(raw, SongParser.parse(raw))!!
+        assertEquals(9, r.keyPc)
+        assertEquals(5, r.pageKey)
+    }
+
+    @Test fun correctWrittenKeyKept() {
+        val raw = "Do = D\nIntro :\nEm  D/F#  G\nBait :\nD\nx\n  Bm\nx\n Em   A\nx\nD\nx\n Bm   Am\nx\nD G  A\nx"
+        val r = KeyDetector.detect(raw, SongParser.parse(raw))!!
+        assertEquals(2, r.keyPc)
+        assertTrue(r.explicit)
+    }
+}

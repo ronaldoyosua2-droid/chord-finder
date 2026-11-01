@@ -92,6 +92,7 @@ class SongActivity : AppCompatActivity() {
     private var saved = false
     private var lines: List<Line> = emptyList()
     private var keyExplicit = false
+    private var pageKey: Int? = null
     private var rendered: List<RenderedLine> = emptyList()
     private var renderedOffset = 0
     private var suggestion: Modulation.Suggestion? = null
@@ -193,7 +194,14 @@ class SongActivity : AppCompatActivity() {
         lines = SongParser.parse(song.raw)
         val det = KeyDetector.detect(song.raw, lines)
         keyExplicit = det?.explicit == true
+        pageKey = det?.pageKey
         if (song.key < 0) song.key = det?.keyPc ?: 0
+        // Lagu lama yang terlanjur memakai kunci tertulis yang salah: perbaiki otomatis
+        // (kecuali kunci itu dipilih sendiri lewat tombol Do = …)
+        if (det?.pageKey != null && song.key == det.pageKey && !song.keyUser) {
+            song.key = det.keyPc
+            persistIfSaved()
+        }
         render()
     }
 
@@ -354,7 +362,8 @@ class SongActivity : AppCompatActivity() {
         val sb = SpannableStringBuilder()
         val hasMod = lines.indices.any { Modulation.isChangeAt(lines, song.mods, it) }
         val header = "Do = ${Notes.keyName(target)}" + (if (tr != 0) "   (asli: ${Notes.keyName(song.key)})" else "") +
-            (if (!keyExplicit) "   · kunci terdeteksi otomatis" else "") +
+            (if (!keyExplicit && pageKey == null) "   · kunci terdeteksi otomatis" else "") +
+            (if (pageKey != null && !song.keyUser) "   · dari chord (halaman tertulis Do = ${Notes.keyName(pageKey!!)})" else "") +
             (if (hasMod) "   · ada modulasi" else "")
         sb.append(header, ForegroundColorSpan(C.MUTED), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         sb.append("\n\n")
@@ -1289,6 +1298,7 @@ class SongActivity : AppCompatActivity() {
             .setTitle("Nada dasar asli lagu")
             .setItems(names) { _, which ->
                 song.key = which
+                song.keyUser = true
                 keyExplicit = true
                 persistIfSaved()
                 render()
