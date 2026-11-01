@@ -137,7 +137,7 @@ tap_text "Koleksi"; sleep 1
 tap_text "Semua lagu"; sleep 1
 tap_text "Gloria Contoh"
 shot 22-gloria-migrasi 3
-adb shell input tap 400 2166
+adb shell input tap 380 2091
 shot 23-main-di-kunci 2
 adb shell input keyevent 4; sleep 1
 adb shell input keyevent 4; sleep 1
