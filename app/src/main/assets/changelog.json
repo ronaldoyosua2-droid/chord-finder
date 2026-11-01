@@ -1,0 +1,41 @@
+[
+  {"v": "1.0.10", "date": "2 Nov 2026", "items": [
+    ["new", "Play in key: the Do = … button now moves the chords to the key you pick; the numbers stay the same. The original key is marked, and \"Kunci asli salah? Ubah\" fixes a wrongly detected original key"],
+    ["fix", "Songs whose key was changed with the old Do button are converted: the detected key becomes the original key and your chosen key becomes the playing key"],
+    ["new", "In-app updates: the app checks GitHub for new versions (once a day or via ⋮ → Cek update), downloads the APK and opens the installer"],
+    ["new", "⋮ menu: Cek update, Apa yang baru (this history) and Tentang"]
+  ]},
+  {"v": "1.0.9", "date": "1 Nov 2026", "items": [
+    ["fix", "The key written on the page is checked against the chords (e.g. PsalmNote says Do = F while the chords are in A)"],
+    ["fix", "Saved songs with such a wrong key are corrected automatically when opened"]
+  ]},
+  {"v": "1.0.8", "date": "31 Oct 2026", "items": [
+    ["new", "Worship lists per date (Daftar ibadah) with their own key per list, play in order with ‹ ›"],
+    ["new", "Metronome follows the YouTube video after you tap the beat once"],
+    ["new", "Export / import the whole collection to one file"],
+    ["new", "★ Favorit tab replaces ★ Minggu ini"]
+  ]},
+  {"v": "1.0.7", "date": "29 Oct 2026", "items": [
+    ["new", "Metronome with count-in voice, beat patterns, sounds and a song sequencer with section cues"],
+    ["new", "Chord bridges and notes per line, song notes"],
+    ["new", "Diminished written as #1°, augmented as 1+"],
+    ["fix", "\"Key: X\" in the middle of a song is read as a modulation"]
+  ]},
+  {"v": "1.0.6", "date": "29 Oct 2026", "items": [
+    ["new", "YouTube video for each song, found automatically"],
+    ["new", "Modulation markers, suggestions and manual modulation"],
+    ["new", "M/m marks in number notation (D(2M), Fm(4m))"]
+  ]},
+  {"v": "1.0.5", "date": "29 Oct 2026", "items": [
+    ["fix", "The app no longer draws under the status bar and navigation buttons (Android 15)"]
+  ]},
+  {"v": "1.0.4", "date": "25 Oct 2026", "items": [
+    ["fix", "JRChord key buttons are no longer read as chords; \"Do = X\" is shown once"]
+  ]},
+  {"v": "1.0.3", "date": "25 Oct 2026", "items": [
+    ["fix", "Build and test setup"]
+  ]},
+  {"v": "1.0.2", "date": "25 Oct 2026", "items": [
+    ["new", "First release: search chords by title or lyrics (JRChord & PsalmNote first), number notation, transpose, offline collection, auto-scroll"]
+  ]}
+]

@@ -109,6 +109,7 @@ adb push seed/songs.json $D/songs.json
 adb push seed/setlists.json $D/setlists.json
 U=$(adb shell stat -c %u /data/data/$PKG | tr -d '\r')
 adb shell chown $U:$U $D/songs.json $D/setlists.json
+adb shell rm -f /data/data/$PKG/shared_prefs/prefs.xml
 adb shell restorecon -R $D || true
 adb shell am start -W -n $PKG/.MainActivity
 sleep 2
@@ -129,6 +130,21 @@ adb shell am start -W -n $PKG/.MainActivity
 sleep 1
 tap_text "⋮"
 shot 21-menu-ekspor 1.5
+adb shell input keyevent 4
+
+# 22+. Tombol Do (main di kunci) + menu update
+tap_text "Koleksi"; sleep 1
+tap_text "Semua lagu"; sleep 1
+tap_text "Gloria Contoh"
+shot 22-gloria-migrasi 3
+adb shell input tap 400 2166
+shot 23-main-di-kunci 2
+adb shell input keyevent 4; sleep 1
+adb shell input keyevent 4; sleep 1
+tap_text "⋮"
+shot 24-menu-update 1.5
+tap_text "Apa yang baru"
+shot 25-apa-yang-baru 2
 adb shell input keyevent 4
 
 adb logcat -d -t 300 > shots/logcat.txt

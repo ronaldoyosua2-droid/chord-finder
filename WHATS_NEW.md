@@ -1,0 +1,4 @@
+- 🎹 **Play in key:** the Do = … button now moves the chords to the key you pick; the numbers stay the same. The original key is marked, and "Kunci asli salah? Ubah" fixes a wrongly detected original key.
+- 🔁 Songs whose key was changed with the old Do button are converted automatically: the detected key becomes the original key and your chosen key becomes the playing key.
+- 🔄 **In-app updates:** the app checks for new versions once a day (or via ⋮ → Cek update), downloads the APK and opens the installer.
+- 📝 **⋮ menu:** Cek update, Apa yang baru (history of every version) and Tentang.

@@ -1,0 +1,1 @@
+To install, download **ChordFinder-vVERSION.apk** below and open it on your phone; it installs over the old version and keeps your songs. From v1.0.10 on, the app checks for new versions itself (⋮ → Cek update). © 2026 Ronald.

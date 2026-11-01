@@ -350,7 +350,7 @@ class SongActivity : AppCompatActivity() {
         val shift = when {
             tr == 0 -> ""
             tr > 0 -> "  (+${tr})"
-            else -> "  (${tr})"
+            else -> "  (−${-tr})"
         }
         keyBtn.text = "Do = " + Notes.keyName(target) + shift
         numBtn.text = when (mode()) {
@@ -1289,23 +1289,90 @@ class SongActivity : AppCompatActivity() {
         Toast.makeText(this, "Disimpan ke Koleksi", Toast.LENGTH_SHORT).show()
     }
 
+    /** Selisih kunci dinormalkan ke −6..+5 (seperti tombol −/+). */
+    private fun norm(d: Int): Int { var x = Notes.mod12(d); if (x > 5) x -= 12; return x }
+
+    /** "Main di kunci": pilih kunci main → semua chord pindah, angka tetap. */
     private fun keyDialog() {
+        val dlg = Dialog(this)
+        val root = vbox().apply {
+            setPadding(dp(16), dp(16), dp(16), dp(14))
+            background = rounded(C.SURFACE, dpf(20f))
+        }
+        root.addView(label("Main di kunci", 17f, C.TEXT, bold = true))
+        root.addView(label("Chord ikut pindah, angka tetap sama", 12.5f, C.MUTED).apply { setPadding(0, dp(3), 0, dp(10)) })
+        val target = Notes.mod12(song.key + tr)
+        // Urutan C..B; label = selisih dari kunci asli
+        for (r in 0 until 3) {
+            val row = hbox()
+            for (c in 0 until 4) {
+                val k = r * 4 + c
+                val off = norm(k - song.key)
+                val isOrig = k == song.key
+                val isOn = k == target
+                val cell = vbox().apply {
+                    gravity = Gravity.CENTER
+                    setPadding(0, dp(9), 0, dp(9))
+                    background = when {
+                        isOn -> rounded(C.CHORD, dpf(12f))
+                        isOrig -> rounded(C.SURFACE2, dpf(12f), dp(2), C.GO)
+                        else -> rounded(C.SURFACE2, dpf(12f), dp(1), C.LINE)
+                    }
+                    addView(label(Notes.keyName(k), 15f, if (isOn) C.BG else C.TEXT, bold = isOn).apply { gravity = Gravity.CENTER })
+                    addView(label(if (isOrig) "asli" else (if (off > 0) "+$off" else "−${-off}"), 10f,
+                        if (isOn) 0xFF3A2A00.toInt() else C.MUTED).apply { gravity = Gravity.CENTER })
+                    isClickable = true
+                    setOnClickListener {
+                        tr = off
+                        persistIfSaved()
+                        render()
+                        dlg.dismiss()
+                    }
+                }
+                row.addView(cell, lp(0, WRAP, 1f).apply { if (c > 0) leftMargin = dp(7) })
+            }
+            root.addView(row, lp(MATCH, WRAP).apply { if (r > 0) topMargin = dp(7) })
+        }
+        root.addView(View(this).apply { setBackgroundColor(C.LINE) }, lp(MATCH, dp(1)).apply { topMargin = dp(12); bottomMargin = dp(10) })
+        val foot = android.text.SpannableStringBuilder()
+        foot.append(if (song.keyUser) "Kunci asli: " else "Kunci asli terdeteksi: ")
+        val s0 = foot.length
+        foot.append(Notes.keyName(song.key))
+        foot.setSpan(ForegroundColorSpan(C.TEXT), s0, foot.length, 0)
+        foot.setSpan(StyleSpan(Typeface.BOLD), s0, foot.length, 0)
+        foot.append(" · ")
+        val s1 = foot.length
+        foot.append("Kunci asli salah? Ubah ›")
+        foot.setSpan(ForegroundColorSpan(C.GO), s1, foot.length, 0)
+        root.addView(label("", 13f, C.MUTED).apply {
+            text = foot
+            setOnClickListener { dlg.dismiss(); originalKeyDialog() }
+        })
+        dlg.setContentView(root)
+        dlg.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dlg.window?.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dlg.show()
+    }
+
+    /** Koreksi kunci asli (kalau deteksi salah). Kunci main yang tampil tetap sama. */
+    private fun originalKeyDialog() {
         val names = Array(12) { i ->
             val n = Notes.keyName(i)
             if (i == song.key) "$n   (sekarang)" else n
         }
         AlertDialog.Builder(this)
-            .setTitle("Nada dasar asli lagu")
+            .setTitle("Kunci asli lagu")
             .setItems(names) { _, which ->
+                val shown = Notes.mod12(song.key + tr)
                 song.key = which
                 song.keyUser = true
                 keyExplicit = true
+                tr = norm(shown - which)
                 persistIfSaved()
                 render()
             }
             .setNegativeButton("Batal", null)
             .show()
-        Toast.makeText(this, "Pilih kunci asli kalau deteksi otomatis salah. Untuk pindah nada, pakai − / +", Toast.LENGTH_LONG).show()
     }
 
     private fun renameDialog() {

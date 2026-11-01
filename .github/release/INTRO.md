@@ -1,0 +1,1 @@
+**Chord Finder** is an Android app for church keyboard and guitar players: search chords by title or a line of lyrics (JRChord & PsalmNote first), read them with number notation (Bm(2), E7(3M), #1°), transpose, follow modulations, play along with YouTube and a metronome, and plan each Sunday's song list.

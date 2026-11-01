@@ -199,6 +199,32 @@ object SongStore {
         persist(ctx)
     }
 
+    /**
+     * Sekali jalan (v1.0.10): dulu tombol Do = … mengganti kunci asli. Lagu yang kuncinya diganti
+     * lewat tombol lama dikembalikan: kunci asli = hasil deteksi, kunci pilihan jadi kunci main.
+     */
+    fun migrateKeyButton(ctx: Context) {
+        val sp = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+        if (sp.getBoolean("migKeyBtn", false)) return
+        var changed = false
+        for (s in all(ctx)) {
+            if (!s.keyUser) continue
+            changed = true
+            val det = com.ronald.chordfinder.music.KeyDetector.detect(s.raw, SongParser.parse(s.raw))?.keyPc ?: continue
+            if (det != s.key) {
+                val shown = s.key + s.transpose
+                var t = com.ronald.chordfinder.music.Notes.mod12(shown - det)
+                if (t > 5) t -= 12
+                s.key = det
+                s.transpose = t
+                changed = true
+            }
+            s.keyUser = false
+        }
+        if (changed) persist(ctx)
+        sp.edit().putBoolean("migKeyBtn", true).apply()
+    }
+
     fun clearStars(ctx: Context) {
         all(ctx).forEach { it.starred = false }
         persist(ctx)

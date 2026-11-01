@@ -53,6 +53,8 @@ class MainActivity : AppCompatActivity() {
     private var onlineMode = true
     /** 0 = Semua lagu, 1 = Daftar ibadah, 2 = Favorit */
     private var libTab = 0
+    private lateinit var menuBtn: TextView
+    private lateinit var newsDot: View
     private var lastQuery = ""
     private var found: JSONObject? = null
     private val autoOpened = HashSet<String>()
@@ -78,6 +80,8 @@ class MainActivity : AppCompatActivity() {
             }
         })
         // Buka Koleksi kalau sudah ada lagu tersimpan
+        SongStore.migrateKeyButton(this)
+        Updater.autoCheck(this)
         showTab(online = SongStore.all(this).isEmpty())
         handleShare(intent)
     }
@@ -89,6 +93,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        Updater.onResume(this)
+        newsDot.visibility = if (Updater.hasUnreadNews(this)) View.VISIBLE else View.GONE
         if (!onlineMode) refreshLibrary()
     }
 
@@ -101,10 +107,13 @@ class MainActivity : AppCompatActivity() {
         // Judul
         val header = hbox().apply { setPadding(dp(16), dp(14), dp(16), dp(4)) }
         header.addView(label("Chord Finder", 22f, C.TEXT, bold = true), lp(0, WRAP, 1f))
-        header.addView(label("⋮", 22f, C.TEXT).apply {
+        menuBtn = label("⋮", 22f, C.TEXT).apply {
             setPadding(dp(14), dp(2), dp(4), dp(2))
             setOnClickListener { v -> mainMenu(v) }
-        })
+        }
+        header.addView(menuBtn)
+        newsDot = View(this).apply { background = rounded(C.CHORD, dpf(4f)) }
+        header.addView(newsDot, lp(dp(8), dp(8)).apply { leftMargin = dp(2); bottomMargin = dp(12) })
         root.addView(header)
 
         // Kotak pencarian
@@ -493,10 +502,18 @@ class MainActivity : AppCompatActivity() {
         val pm = android.widget.PopupMenu(this, anchor)
         pm.menu.add(0, 1, 0, "⤓ Ekspor Koleksi")
         pm.menu.add(0, 2, 1, "⤒ Impor Koleksi")
+        pm.menu.add(0, 3, 2, "🔄 Cek update")
+        val news = android.text.SpannableString("✨ Apa yang baru" + if (Updater.hasUnreadNews(this)) "  ●" else "")
+        if (Updater.hasUnreadNews(this)) news.setSpan(android.text.style.ForegroundColorSpan(C.CHORD), news.length - 1, news.length, 0)
+        pm.menu.add(0, 4, 3, news)
+        pm.menu.add(0, 5, 4, "ⓘ Tentang · v${Updater.versionName(this)}")
         pm.setOnMenuItemClickListener {
             when (it.itemId) {
                 1 -> exportLauncher.launch("ChordFinder-koleksi-${Dates.today()}.json")
                 2 -> importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream", "*/*"))
+                3 -> Updater.check(this, manual = true)
+                4 -> Updater.showHistory(this) { newsDot.visibility = View.GONE }
+                5 -> Updater.showAbout(this)
             }
             true
         }

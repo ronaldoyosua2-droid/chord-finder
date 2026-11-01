@@ -40,13 +40,26 @@ jobs:
           mkdir -p out
           cp app/build/outputs/apk/release/app-release.apk out/ChordFinder-v1.0.${{ github.run_number }}.apk
 
+      - name: Release notes
+        run: |
+          V=1.0.${{ github.run_number }}
+          {
+            cat .github/release/INTRO.md
+            echo
+            echo "## ✨ What's new · v$V"
+            echo
+            cat WHATS_NEW.md
+            echo
+            echo "---"
+            echo
+            sed "s/VERSION/$V/" .github/release/OUTRO.md
+          } > release_notes.md
+
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: Chord Finder v1.0.${{ github.run_number }}
-          body: |
-            APK Chord Finder build #${{ github.run_number }}.
-            Unduh file .apk di bawah lalu pasang (izinkan "instal dari sumber tidak dikenal" jika diminta).
+          body_path: release_notes.md
           files: out/*.apk
           make_latest: true

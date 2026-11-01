@@ -10,6 +10,7 @@ def song(i, title, raw, key, bpm):
 songs = [
     song(1, "Lagu Contoh", contoh, 0, 76),
     song(2, "Lagu Kedua", "Do = G\nVerse :\nG    D/F#   Em   C\nLirik contoh\nAm   D   G\nLirik contoh", 7, 70),
+    dict(song(4, "Gloria Contoh", "Intro :\nD    G    Bm    G\nBait :\nD                G   D\nLirik contoh\nBm             A\nLirik contoh", 0, 72), keyUser=True),
     song(3, "Lagu Ketiga", "Do = D\nReff :\nD   A/C#   Bm   G\nLirik contoh\nEm   A   D\nLirik contoh", 2, 84),
 ]
 def sl(days, name, ids, tr=None):
