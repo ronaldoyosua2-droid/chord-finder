@@ -89,6 +89,11 @@ adb shell input keyevent 4; sleep 1
 SONG="$(cat .github/scripts/contoh.txt)"
 adb shell "am start -W -n $PKG/.SongActivity --es title 'Lagu Contoh' --es query 'Ajaib Kau Tuhan JPCC Worship' --es text '$SONG'"
 shot 05-angka-mm 8
+# Tombol Scroll: ikon saja, membesar saat menggulir
+tap_re "⇣"
+shot 05b-scroll-aktif 1.5
+tap_re "❚❚ Jeda"; sleep 1
+adb shell input swipe 540 900 540 2200 300; sleep 1
 adb shell input swipe 540 1700 540 900 400
 shot 06-modulasi 2
 
@@ -115,7 +120,7 @@ adb shell input tap 956 566
 shot 16-setelah-stop 1.5
 
 # 7. Putar YouTube
-tap_text "▶ YouTube"
+tap_re "▶"
 shot 07-youtube 12
 
 # 8. Pilih video lain

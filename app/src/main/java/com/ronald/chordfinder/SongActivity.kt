@@ -339,9 +339,9 @@ class SongActivity : AppCompatActivity() {
         row2.addView(small(pill("A−") { font(-1f) }).apply { setPadding(dp(9), dp(8), dp(9), dp(8)); minWidth = 0 })
         row2.addView(small(pill("A+") { font(1f) }).apply { setPadding(dp(9), dp(8), dp(9), dp(8)); minWidth = 0 },
             lp(WRAP, WRAP).apply { leftMargin = dp(4) })
-        ytBtn = small(pill("▶ YouTube") { ytButton() })
+        ytBtn = small(pill("▶") { ytButton() })
         row2.addView(ytBtn, lp(WRAP, WRAP).apply { leftMargin = dp(8) })
-        playBtn = small(pill("▶ Scroll") { setScrolling(!scrolling) })
+        playBtn = small(pill("⇣") { setScrolling(!scrolling) })
         playBtn.setOnLongClickListener {
             speedIdx = (speedIdx + 1) % SPEEDS.size
             Toast.makeText(this, "Kecepatan scroll: ${speedIdx + 1}x", Toast.LENGTH_SHORT).show()
@@ -1053,7 +1053,8 @@ class SongActivity : AppCompatActivity() {
     }
 
     private fun updateYtButton() {
-        ytBtn.text = if (playing) "❚❚ YouTube" else "▶ YouTube"
+        // Ikon saja saat tidak aktif; membesar dengan label saat video diputar
+        ytBtn.text = if (playing) "❚❚ YouTube" else "▶"
         ytBtn.background = rounded(C.YT, dpf(18f))
         ytBtn.setTextColor(0xFFFFFFFF.toInt())
         ytBtn.setTypeface(Typeface.DEFAULT, Typeface.BOLD)
@@ -1323,7 +1324,8 @@ class SongActivity : AppCompatActivity() {
         scrolling = on
         handler.removeCallbacks(scroller)
         if (on) handler.post(scroller)
-        playBtn.text = if (on) "❚❚ Jeda" else "▶ Scroll"
+        // Ikon saja saat tidak aktif; membesar dengan label saat menggulir
+        playBtn.text = if (on) "❚❚ Jeda" else "⇣"
         playBtn.setPill(on)
         small(playBtn)
     }
