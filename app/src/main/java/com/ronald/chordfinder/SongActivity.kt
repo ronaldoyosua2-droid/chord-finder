@@ -143,6 +143,7 @@ class SongActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Theme.apply(this)
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
@@ -176,6 +177,49 @@ class SongActivity : AppCompatActivity() {
         updateSongNote()
         updateYtCard()
         if (song.ytId.isEmpty()) autoSearch()
+        body.postDelayed({ if (!isFinishing) Guide.maybeStart(this, Guide.SONG, guideSteps()) }, 500)
+    }
+
+    /** Panduan layar lagu (5 langkah). */
+    private fun guideSteps() = listOf(
+        GuideStep("🎹 Main di kunci", {
+            "Ketuk ${keyBtn.text} lalu pilih kunci lain: chord pindah, angka tetap. Tombol − / + menggeser setengah nada."
+        }, { Guide.rectOf(keyBtn) }, needsAction = true),
+        GuideStep("✋ Tekan lama baris chord", {
+            "Tekan lama sebuah baris chord untuk menambah jembatan chord, catatan, atau menandai modulasi di baris itu."
+        }, { chordLineRect() }, needsAction = true, hand = true),
+        GuideStep("▶ YouTube", {
+            "Putar video lagunya langsung di aplikasi. Kalau videonya kurang pas, bisa diganti."
+        }, { Guide.rectOf(ytBtn) }),
+        GuideStep(android.text.SpannableStringBuilder("♩ Metronom").appendExp(), {
+            "Hitungan masuk \"one, two, three, four\", pola ketukan, dan aba-aba bagian. Masih diuji, hasilnya bisa meleset."
+        }, { Guide.rectOf(metro.button) }),
+        GuideStep("💾 Simpan", {
+            "Simpan lagu ke Koleksi supaya bisa dibuka tanpa internet dan dimasukkan ke 📅 Daftar ibadah."
+        }, { Guide.rectOf(saveBtn) }),
+    )
+
+    /** Kotak baris chord pertama di layar (digulir dulu kalau belum terlihat). */
+    private fun chordLineRect(): android.graphics.Rect? {
+        val layout = body.layout ?: return null
+        val i = rendered.indexOfFirst { it.note < 0 && it.spans.any { s -> s.kind == Span.Kind.CHORD } }
+        if (i < 0) return null
+        val line = i + renderedOffset
+        if (line >= layout.lineCount) return null
+        val sv = Guide.rectOf(scroll) ?: return null
+        val loc = IntArray(2)
+        body.getLocationOnScreen(loc)
+        var top = loc[1] + body.totalPaddingTop + layout.getLineTop(line)
+        var bottom = loc[1] + body.totalPaddingTop + layout.getLineBottom(line)
+        if (top < sv.top || bottom > sv.bottom) {
+            scroll.scrollTo(0, (layout.getLineTop(line) - dp(40)).coerceAtLeast(0))
+            body.getLocationOnScreen(loc)
+            top = loc[1] + body.totalPaddingTop + layout.getLineTop(line)
+            bottom = loc[1] + body.totalPaddingTop + layout.getLineBottom(line)
+        }
+        val left = loc[0] + body.totalPaddingLeft + layout.getLineLeft(line).toInt()
+        val right = (loc[0] + body.totalPaddingLeft + layout.getLineRight(line).toInt()).coerceAtMost(sv.right - dp(8))
+        return android.graphics.Rect(left, top, right.coerceAtLeast(left + dp(60)), bottom)
     }
 
     override fun onPause() {
@@ -251,7 +295,7 @@ class SongActivity : AppCompatActivity() {
         scroll = ScrollView(this).apply { isFillViewport = true }
         val hs = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
         body = TextView(this).apply {
-            typeface = Typeface.MONOSPACE
+            setTypeface(Typeface.MONOSPACE, C.LYRIC_STYLE)
             setTextColor(C.TEXT)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, Prefs.fontSize(this@SongActivity))
             setLineSpacing(0f, 1.12f)
@@ -433,7 +477,8 @@ class SongActivity : AppCompatActivity() {
         suggestion = Modulation.suggest(lines, keys, song.mods, song.modDismissed)
         val s = suggestion
         if (s == null) { modBanner.visibility = View.GONE; return }
-        modText.text = "Sepertinya \"${s.sectionName}\" naik ke Do = ${Notes.keyName(s.newKey + tr)}. Pakai?"
+        modText.text = android.text.SpannableStringBuilder(
+            "Sepertinya \"${s.sectionName}\" naik ke Do = ${Notes.keyName(s.newKey + tr)}. Pakai?").appendExp("EKSP")
         modBanner.visibility = View.VISIBLE
     }
 
@@ -840,11 +885,12 @@ class SongActivity : AppCompatActivity() {
         tapPanel = vbox().apply {
             gravity = Gravity.CENTER_HORIZONTAL
             setPadding(dp(20), dp(18), dp(20), dp(16))
-            setBackgroundColor(0xF20E0E13.toInt())
+            setBackgroundColor((C.BG and 0x00FFFFFF) or 0xF2000000.toInt())
             visibility = View.GONE
             isClickable = true
         }
-        tapPanel.addView(label("♩ Sinkron metronom ke video", 17f, C.TEXT, bold = true).apply { gravity = Gravity.CENTER })
+        tapPanel.addView(expTitle("♩ Sinkron metronom ke video").apply { gravity = Gravity.CENTER })
+        tapPanel.addView(expNote().apply { gravity = Gravity.CENTER; setPadding(0, dp(4), 0, 0) })
         tapPanel.addView(label("Ketuk lingkaran setiap ketukan, mulai tepat di ketukan 1 intro. Minimal 4 ketukan, makin banyak makin pas.",
             13f, C.MUTED).apply { gravity = Gravity.CENTER; setPadding(0, dp(6), 0, dp(12)) })
         val size = (resources.displayMetrics.widthPixels * 0.5).toInt().coerceAtMost(dp(230))
@@ -1128,7 +1174,7 @@ class SongActivity : AppCompatActivity() {
         val dlg = Dialog(this)
         val root = vbox().apply {
             setPadding(dp(14), dp(16), dp(14), dp(14))
-            background = rounded(C.SURFACE, dpf(20f))
+            background = sheetBg(20f)
         }
         root.addView(label("Pilih video YouTube", 17f, C.TEXT, bold = true))
         val sub = label("", 12.5f, C.MUTED).apply { setPadding(0, dp(2), 0, dp(10)) }
@@ -1297,7 +1343,7 @@ class SongActivity : AppCompatActivity() {
         val dlg = Dialog(this)
         val root = vbox().apply {
             setPadding(dp(16), dp(16), dp(16), dp(14))
-            background = rounded(C.SURFACE, dpf(20f))
+            background = sheetBg(20f)
         }
         root.addView(label("Main di kunci", 17f, C.TEXT, bold = true))
         root.addView(label("Chord ikut pindah, angka tetap sama", 12.5f, C.MUTED).apply { setPadding(0, dp(3), 0, dp(10)) })

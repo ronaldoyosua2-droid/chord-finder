@@ -10,22 +10,42 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 
-/** Palet gelap yang nyaman dibaca di atas stand keyboard. */
+/**
+ * Palet warna. Dua tema: Biasa (gelap) dan AMOLED (hitam pekat, kontras tinggi).
+ * [amoled] diisi oleh [Theme.apply] sebelum tampilan dibangun.
+ */
 object C {
-    val BG = Color.parseColor("#0E0E13")
-    val SURFACE = Color.parseColor("#16161D")
-    val SURFACE2 = Color.parseColor("#20202A")
-    val LINE = Color.parseColor("#2C2C38")
-    val TEXT = Color.parseColor("#ECEAE4")
-    val MUTED = Color.parseColor("#9A978F")
-    val CHORD = Color.parseColor("#F5B342")
-    val NUMBER = Color.parseColor("#6FD3C6")
-    val SECTION = Color.parseColor("#C9A7FF")
-    val STAR = Color.parseColor("#F5B342")
-    val MOD = Color.parseColor("#FF8FA3")
-    val YT = Color.parseColor("#FF3B3B")
-    val NOTE = Color.parseColor("#8FC7FF")
-    val GO = Color.parseColor("#7BE495")
+    @JvmStatic var amoled = true
+    private fun c(normal: String, black: String) = Color.parseColor(if (amoled) black else normal)
+    val BG get() = c("#0E0E13", "#000000")
+    val SURFACE get() = c("#16161D", "#000000")
+    val SURFACE2 get() = c("#20202A", "#0E0E0E")
+    val LINE get() = c("#2C2C38", "#333333")
+    val TEXT get() = c("#ECEAE4", "#FFFFFF")
+    val MUTED get() = c("#9A978F", "#A9A9A9")
+    val CHORD get() = c("#F5B342", "#FFC24A")
+    val NUMBER get() = c("#6FD3C6", "#5FF2E0")
+    val SECTION get() = c("#C9A7FF", "#D9B8FF")
+    val STAR get() = CHORD
+    val MOD get() = c("#FF8FA3", "#FF8FA3")
+    val YT get() = c("#FF3B3B", "#FF4040")
+    val NOTE get() = c("#8FC7FF", "#8FC7FF")
+    val GO get() = c("#7BE495", "#8CFFA8")
+    /** Lirik ditebalkan di tema AMOLED. */
+    val LYRIC_STYLE get() = if (amoled) Typeface.BOLD else Typeface.NORMAL
+}
+
+/** Pilihan tema (⋮ → Tema). Bawaan: AMOLED. */
+object Theme {
+    private fun sp(ctx: Context) = ctx.getSharedPreferences("prefs", Context.MODE_PRIVATE)
+    fun isAmoled(ctx: Context) = sp(ctx).getBoolean("amoled", true)
+    fun set(ctx: Context, amoled: Boolean) = sp(ctx).edit().putBoolean("amoled", amoled).apply()
+
+    /** Panggil di onCreate sebelum super.onCreate. */
+    fun apply(a: android.app.Activity) {
+        C.amoled = isAmoled(a)
+        a.setTheme(if (C.amoled) R.style.AppTheme_Amoled else R.style.AppTheme)
+    }
 }
 
 fun Context.dp(v: Int) = (v * resources.displayMetrics.density).toInt()
@@ -108,3 +128,50 @@ fun View.fitSystemBars() {
     }
     androidx.core.view.ViewCompat.requestApplyInsets(this)
 }
+
+/** Lencana kecil berwarna (mis. "EKSPERIMENTAL") di dalam teks. */
+class BadgeSpan(private val bg: Int, private val fg: Int, private val scale: Float = 0.62f) :
+    android.text.style.ReplacementSpan() {
+    private fun small(p: android.graphics.Paint) = android.graphics.Paint(p).apply {
+        textSize = p.textSize * scale
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+    override fun getSize(p: android.graphics.Paint, t: CharSequence, s: Int, e: Int, fm: android.graphics.Paint.FontMetricsInt?): Int {
+        val sp = small(p)
+        return (sp.measureText(t, s, e) + sp.textSize * 1.1f).toInt()
+    }
+    override fun draw(c: android.graphics.Canvas, t: CharSequence, s: Int, e: Int, x: Float, top: Int, y: Int, bottom: Int, p: android.graphics.Paint) {
+        val sp = small(p)
+        val padX = sp.textSize * 0.55f
+        val w = sp.measureText(t, s, e) + padX * 2
+        val h = sp.textSize * 1.45f
+        val cy = y + (p.ascent() + p.descent()) / 2f
+        val r = android.graphics.RectF(x, cy - h / 2, x + w, cy + h / 2)
+        c.drawRoundRect(r, h * 0.3f, h * 0.3f, android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = bg })
+        sp.color = fg
+        c.drawText(t, s, e, x + padX, cy - (sp.ascent() + sp.descent()) / 2f, sp)
+    }
+}
+
+/** Tambahkan lencana EKSPERIMENTAL (atau [word]) di akhir [sb]. */
+fun android.text.SpannableStringBuilder.appendExp(word: String = "EKSPERIMENTAL"): android.text.SpannableStringBuilder {
+    append("  ")
+    val s = length
+    append(word)
+    setSpan(BadgeSpan(C.SECTION, 0xFF000000.toInt()), s, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    return this
+}
+
+/** Judul dengan lencana EKSPERIMENTAL. */
+fun Context.expTitle(text: String, size: Float = 17f): TextView =
+    label("", size, C.TEXT, bold = true).apply {
+        this.text = android.text.SpannableStringBuilder(text).appendExp()
+    }
+
+/** Catatan kecil di bawah judul fitur eksperimental. */
+fun Context.expNote(): TextView =
+    label("Masih diuji, hasilnya bisa meleset. Kalau ada yang salah, kabari pembuat.", 12f, C.MUTED)
+
+/** Latar lembar/dialog. Di tema AMOLED diberi garis tepi supaya terlihat di atas hitam. */
+fun Context.sheetBg(radius: Float) =
+    if (C.amoled) rounded(C.SURFACE, dpf(radius), dp(1), C.LINE) else rounded(C.SURFACE, dpf(radius))

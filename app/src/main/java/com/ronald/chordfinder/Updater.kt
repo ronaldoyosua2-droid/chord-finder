@@ -254,7 +254,7 @@ object Updater {
         val dlg = Dialog(a)
         val root = a.vbox().apply {
             setPadding(a.dp(16), a.dp(16), a.dp(16), a.dp(12))
-            background = rounded(C.SURFACE, a.dpf(20f))
+            background = a.sheetBg(20f)
         }
         root.addView(a.label("✨ Apa yang baru", 18f, C.TEXT, bold = true))
         root.addView(a.label("Versi terpasang: v$cur", 12.5f, C.MUTED).apply { setPadding(0, a.dp(2), 0, a.dp(10)) })
@@ -317,7 +317,13 @@ object Updater {
     fun showAbout(a: AppCompatActivity) {
         AlertDialog.Builder(a)
             .setTitle("Chord Finder")
-            .setMessage("Versi v${versionName(a)}\n\n© 2026 Ronald\ngithub.com/ronaldoyosua2-droid/chord-finder")
+            .setMessage("Versi v${versionName(a)}\n\n" +
+                "Fitur EKSPERIMENTAL (masih diuji):\n" +
+                "• Metronom (termasuk 🎤 Deteksi tempo dan ☰ Urutan lagu)\n" +
+                "• ♩ Sinkron ke video YouTube\n" +
+                "• Saran modulasi otomatis\n" +
+                "Hasilnya bisa meleset. Kalau ada yang salah, kirim SS ke pembuat.\n\n" +
+                "© 2026 Ronald\ngithub.com/ronaldoyosua2-droid/chord-finder")
             .setPositiveButton("OK", null)
             .show()
     }

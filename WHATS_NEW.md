@@ -1,4 +1,4 @@
-- 🎹 **Play in key:** the Do = … button now moves the chords to the key you pick; the numbers stay the same. The original key is marked, and "Kunci asli salah? Ubah" fixes a wrongly detected original key.
-- 🔁 Songs whose key was changed with the old Do button are converted automatically: the detected key becomes the original key and your chosen key becomes the playing key.
-- 🔄 **In-app updates:** the app checks for new versions once a day (or via ⋮ → Cek update), downloads the APK and opens the installer.
-- 📝 **⋮ menu:** Cek update, Apa yang baru (history of every version) and Tentang.
+- 🖤 **AMOLED theme:** pure black background with brighter chords, numbers and bolder lyrics, easier to read on the keyboard stand. Switch back anytime via ⋮ → Tema.
+- 🧭 **Interactive guide:** on first install the app highlights the real buttons (search, sites, Koleksi, menu, and on the song screen: Do, long-press a chord line, YouTube, metronome, Simpan). Tap the highlighted button to try it right away, or press Lanjut. Replay via ⋮ → Panduan.
+- ✨ After an update, only a short "Diperbarui ke vX" card with what's new is shown.
+- 🧪 Features that can still be inaccurate are marked **EKSPERIMENTAL**: metronome (tempo detection, song sequence), sync to video and automatic modulation suggestions. The list is in ⋮ → Tentang.

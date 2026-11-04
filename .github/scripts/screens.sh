@@ -30,9 +30,31 @@ PY
   [ -n "$b" ] && adb shell input tap $b
 }
 
-# 1. Layar awal
+# Ketuk tombol yang teksnya cocok penuh dengan regex (mis. tombol "Do = D", bukan isi lagu)
+tap_re() {
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null
+  adb pull /sdcard/ui.xml ui.xml >/dev/null
+  b=$(python3 - "$1" <<'PY'
+import re,sys,html
+t=sys.argv[1]; x=open('ui.xml',encoding='utf-8').read()
+for m in re.finditer(r'<node [^>]*>', x):
+    n=m.group(0)
+    tm=re.search(r'text="([^"]*)"', n)
+    if tm and re.fullmatch(t, html.unescape(tm.group(1)).strip()):
+        a=list(map(int,re.findall(r'\d+', re.search(r'bounds="([^"]*)"',n).group(1))))
+        print((a[0]+a[2])//2, (a[1]+a[3])//2); break
+PY
+)
+  [ -n "$b" ] && adb shell input tap $b
+}
+
+# 1. Layar awal + panduan layar utama (pemasangan baru, tema AMOLED bawaan)
 adb shell am start -W -n $PKG/.MainActivity
 shot 01-awal 4
+tap_re "Lanjut"; shot 01b-panduan-2 1.5
+tap_re "Lanjut"; shot 01c-panduan-3 1.5
+tap_re "Lanjut"; shot 01d-panduan-4 1.5
+tap_re "Selesai"; sleep 1
 
 # 2. Pencarian Google (diutamakan JRChord & PsalmNote)
 adb shell am start -W -a android.intent.action.SEND -t text/plain \
@@ -45,6 +67,15 @@ adb shell am start -W -a android.intent.action.SEND -t text/plain \
   --es android.intent.extra.TEXT "https://www.jrchord.com/ajaib-kau-tuhan-jpcc-worship" \
   -n $PKG/.MainActivity
 shot 03-jrchord 14
+# Panduan layar lagu: coba tombol Do (pilihan a), lalu lanjut
+tap_re "Do = [A-G][b#]?"
+shot 03b-coba-do 2
+adb shell input keyevent 4
+shot 03c-panduan-tekan-lama 2.5
+tap_re "Lanjut"; shot 03d-panduan-youtube 1.5
+tap_re "Lanjut"; shot 03e-panduan-metronom 1.5
+tap_re "Lanjut"; shot 03f-panduan-simpan 1.5
+tap_re "Selesai"; sleep 1
 
 # 4. PsalmNote
 adb shell input keyevent 4; sleep 1
@@ -112,7 +143,9 @@ adb shell chown $U:$U $D/songs.json $D/setlists.json
 adb shell rm -f /data/data/$PKG/shared_prefs/prefs.xml
 adb shell restorecon -R $D || true
 adb shell am start -W -n $PKG/.MainActivity
-sleep 2
+# Pengguna lama: tanpa panduan, hanya kartu "Diperbarui"
+shot 26-diperbarui 3
+tap_re "Nanti"; sleep 1
 tap_text "Koleksi"; sleep 1
 tap_text "Daftar ibadah"
 shot 17-daftar-ibadah 2
@@ -145,7 +178,28 @@ tap_text "⋮"
 shot 24-menu-update 1.5
 tap_text "Apa yang baru"
 shot 25-apa-yang-baru 2
-adb shell input keyevent 4
+adb shell input keyevent 4; sleep 1
+
+# Tentang (daftar fitur eksperimental)
+tap_text "⋮"; sleep 1
+tap_text "Tentang"
+shot 27-tentang 1.5
+adb shell input keyevent 4; sleep 1
+
+# Tema: AMOLED -> Biasa -> AMOLED
+tap_text "⋮"; sleep 1
+tap_text "Tema:"
+shot 28-tema-pilih 1.5
+tap_text "Biasa"
+shot 29-tema-biasa 3
+tap_text "⋮"; sleep 1
+tap_text "Tema:"; sleep 1
+tap_text "AMOLED"; sleep 3
+
+# Ulang panduan
+tap_text "⋮"; sleep 1
+tap_text "Panduan"
+shot 30-ulang-panduan 2
 
 adb logcat -d -t 300 > shots/logcat.txt
 ls -la shots

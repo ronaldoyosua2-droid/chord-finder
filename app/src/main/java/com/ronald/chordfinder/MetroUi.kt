@@ -128,7 +128,7 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 140f)
             setTypeface(Typeface.DEFAULT, Typeface.BOLD)
             setShadowLayer(a.dpf(18f), 0f, 0f, 0x667BE495)
-            setBackgroundColor(0xB30E0E13.toInt())
+            setBackgroundColor((C.BG and 0x00FFFFFF) or 0xB3000000.toInt())
             visibility = View.GONE
             isClickable = true
             setOnClickListener { stop() }
@@ -324,14 +324,15 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
         val dlg = Dialog(a)
         val root = a.vbox().apply {
             setPadding(a.dp(16), a.dp(16), a.dp(16), a.dp(16))
-            background = rounded(C.SURFACE, a.dpf(22f))
+            background = a.sheetBg(22f)
         }
         val scroll = ScrollView(a)
         val box = a.vbox()
         scroll.addView(box)
         root.addView(scroll, lp(MATCH, 0, 1f))
 
-        box.addView(a.label("Metronom", 17f, C.TEXT, bold = true))
+        box.addView(a.expTitle("Metronom"))
+        box.addView(a.expNote().apply { setPadding(0, a.dp(2), 0, 0) })
 
         // BPM
         val bpmRow = a.hbox(Gravity.CENTER).apply { setPadding(0, a.dp(10), 0, 0) }
@@ -516,7 +517,8 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
         val msg = a.label("Putar lagunya sekarang (YouTube, speaker, atau tim). Mendengarkan 12 detik…", 14f, C.TEXT)
         val bar = ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100 }
         box.addView(msg); box.addView(bar, lp(MATCH, WRAP).apply { topMargin = a.dp(12) })
-        val d = AlertDialog.Builder(a).setTitle("🎤 Deteksi tempo").setView(box)
+        box.addView(a.expNote().apply { setPadding(0, a.dp(10), 0, 0) })
+        val d = AlertDialog.Builder(a).setTitle(android.text.SpannableStringBuilder("🎤 Deteksi tempo").appendExp("EKSP")).setView(box)
             .setNegativeButton("Tutup", null).show()
         engine.detectTempo(12, { p -> bar.progress = (p * 100).toInt() }) { bpm ->
             if (!d.isShowing) return@detectTempo
@@ -537,9 +539,9 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
         val dlg = Dialog(a)
         val root = a.vbox().apply {
             setPadding(a.dp(14), a.dp(16), a.dp(14), a.dp(14))
-            background = rounded(C.SURFACE, a.dpf(22f))
+            background = a.sheetBg(22f)
         }
-        root.addView(a.label("Urutan lagu", 17f, C.TEXT, bold = true))
+        root.addView(a.expTitle("Urutan lagu"))
         root.addView(a.label("Diisi otomatis dari bagian lagu (± 1 chord = 1 bar). Sesuaikan dengan cara kalian main.", 12f, C.MUTED)
             .apply { setPadding(0, a.dp(2), 0, a.dp(8)) })
         val list = a.vbox()

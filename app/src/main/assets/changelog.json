@@ -1,4 +1,10 @@
 [
+  {"v": "1.0.11", "date": "4 Nov 2026", "items": [
+    ["new", "AMOLED theme: pure black background, brighter chords and numbers, bolder lyrics. Switch via ⋮ → Tema"],
+    ["new", "Interactive guide on the real buttons for first-time users; tap the highlighted button to try it. Replay via ⋮ → Panduan"],
+    ["new", "After an update only a short \"Diperbarui ke vX\" card is shown"],
+    ["new", "Features that can still be inaccurate are marked EKSPERIMENTAL (metronome, sync to video, modulation suggestions); listed in ⋮ → Tentang"]
+  ]},
   {"v": "1.0.10", "date": "2 Nov 2026", "items": [
     ["new", "Play in key: the Do = … button now moves the chords to the key you pick; the numbers stay the same. The original key is marked, and \"Kunci asli salah? Ubah\" fixes a wrongly detected original key"],
     ["fix", "Songs whose key was changed with the old Do button are converted: the detected key becomes the original key and your chosen key becomes the playing key"],

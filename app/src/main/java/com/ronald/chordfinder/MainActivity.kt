@@ -68,6 +68,7 @@ class MainActivity : AppCompatActivity() {
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Theme.apply(this)
         super.onCreate(savedInstanceState)
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(buildUi().apply { fitSystemBars() })
@@ -80,11 +81,31 @@ class MainActivity : AppCompatActivity() {
             }
         })
         // Buka Koleksi kalau sudah ada lagu tersimpan
+        Guide.init(this)
         SongStore.migrateKeyButton(this)
         Updater.autoCheck(this)
         showTab(online = SongStore.all(this).isEmpty())
         handleShare(intent)
+        window.decorView.post {
+            Guide.showUpdatedCardIfNeeded(this) { Guide.maybeStart(this, Guide.MAIN, guideSteps()) }
+        }
     }
+
+    /** Panduan layar utama (4 langkah). */
+    private fun guideSteps() = listOf(
+        GuideStep("🔍 Cari lagu", {
+            "Ketik judul atau sepotong lirik, misalnya \"kami datang bawa pujian\", lalu tekan Cari. Coba sekarang, atau tekan Lanjut."
+        }, { Guide.rectOf(search.parent as View) }, event = "search"),
+        GuideStep("🌐 Pilih situs", {
+            "Hasil diutamakan dari JRChord dan PsalmNote. Ketuk untuk memilih satu situs saja, atau Semua situs."
+        }, { Guide.rectOf(sourceChips.firstOrNull()?.parent?.parent as? View) }),
+        GuideStep("📚 Koleksi", {
+            "Lagu yang kamu simpan ada di sini dan bisa dibuka tanpa internet. Di sini juga ada 📅 Daftar ibadah per Minggu dan ★ Favorit."
+        }, { Guide.rectOf(tabLibrary) }),
+        GuideStep("⋮ Menu", {
+            "Ekspor/impor koleksi, cek update, ✨ Apa yang baru, 🎨 Tema, dan 🧭 Panduan untuk mengulang panduan ini."
+        }, { Guide.rectOf(menuBtn) }),
+    )
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -287,6 +308,7 @@ class MainActivity : AppCompatActivity() {
         val q = search.text.toString().trim()
         if (q.isEmpty()) return
         hideKeyboard()
+        Guide.event(this, "search")
         if (!onlineMode) {
             // Di Koleksi: kalau tidak ada yang cocok, tawarkan cari online
             if (filteredSongs().isEmpty()) { showTab(true); runOnline(q) }
@@ -506,7 +528,9 @@ class MainActivity : AppCompatActivity() {
         val news = android.text.SpannableString("✨ Apa yang baru" + if (Updater.hasUnreadNews(this)) "  ●" else "")
         if (Updater.hasUnreadNews(this)) news.setSpan(android.text.style.ForegroundColorSpan(C.CHORD), news.length - 1, news.length, 0)
         pm.menu.add(0, 4, 3, news)
-        pm.menu.add(0, 5, 4, "ⓘ Tentang · v${Updater.versionName(this)}")
+        pm.menu.add(0, 6, 4, "🎨 Tema: " + if (C.amoled) "AMOLED" else "Biasa")
+        pm.menu.add(0, 7, 5, "🧭 Panduan")
+        pm.menu.add(0, 5, 6, "ⓘ Tentang · v${Updater.versionName(this)}")
         pm.setOnMenuItemClickListener {
             when (it.itemId) {
                 1 -> exportLauncher.launch("ChordFinder-koleksi-${Dates.today()}.json")
@@ -514,10 +538,23 @@ class MainActivity : AppCompatActivity() {
                 3 -> Updater.check(this, manual = true)
                 4 -> Updater.showHistory(this) { newsDot.visibility = View.GONE }
                 5 -> Updater.showAbout(this)
+                6 -> themeDialog()
+                7 -> Guide.replay(this, guideSteps())
             }
             true
         }
         pm.show()
+    }
+
+    private fun themeDialog() {
+        val names = arrayOf("AMOLED (hitam pekat, kontras tinggi)", "Biasa (gelap)")
+        AlertDialog.Builder(this).setTitle("🎨 Tema")
+            .setSingleChoiceItems(names, if (C.amoled) 0 else 1) { d, i ->
+                d.dismiss()
+                val amoled = i == 0
+                if (amoled != C.amoled) { Theme.set(this, amoled); recreate() }
+            }
+            .setNegativeButton("Batal", null).show()
     }
 
     private fun songRow(s: Song): View {

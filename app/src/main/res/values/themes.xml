@@ -17,4 +17,23 @@
         <item name="android:textColorPrimary">#ECEAE4</item>
         <item name="android:textColorSecondary">#B5B2AA</item>
     </style>
+    <style name="AppTheme.Amoled">
+        <item name="colorPrimary">#000000</item>
+        <item name="colorPrimaryDark">#000000</item>
+        <item name="colorAccent">#FFC24A</item>
+        <item name="android:windowBackground">#000000</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#A9A9A9</item>
+        <item name="android:textColorHint">#7A7A7A</item>
+        <item name="alertDialogTheme">@style/DialogTheme.Amoled</item>
+    </style>
+    <style name="DialogTheme.Amoled">
+        <item name="colorAccent">#FFC24A</item>
+        <item name="android:background">#000000</item>
+        <item name="android:windowBackground">@drawable/dialog_amoled</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#C8C8C8</item>
+    </style>
 </resources>

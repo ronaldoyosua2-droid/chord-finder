@@ -43,6 +43,7 @@ class SetlistActivity : AppCompatActivity() {
     private lateinit var touch: ItemTouchHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Theme.apply(this)
         super.onCreate(savedInstanceState)
         val s = intent.getStringExtra(EXTRA_ID)?.let { SetlistStore.get(this, it) }
         if (s == null) { finish(); return }
@@ -281,7 +282,7 @@ class SetlistActivity : AppCompatActivity() {
         val dlg = Dialog(this)
         val root = vbox().apply {
             setPadding(dp(14), dp(16), dp(14), dp(14))
-            background = rounded(C.SURFACE, dpf(20f))
+            background = sheetBg(20f)
         }
         root.addView(label("Tambah lagu", 17f, C.TEXT, bold = true))
         val input = EditText(this).apply {
