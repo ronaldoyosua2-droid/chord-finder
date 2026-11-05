@@ -15,6 +15,8 @@ android {
         targetSdk = 35
         versionCode = runNumber
         versionName = "1.0.$runNumber"
+        // ONNX Runtime (AI tempo) hanya untuk prosesor HP umum + emulator x86_64
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
     }
 
     signingConfigs {
@@ -47,5 +49,8 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    // AI deteksi tempo (model Beat This! dalam format ONNX)
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }

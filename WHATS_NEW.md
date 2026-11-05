@@ -1,4 +1,3 @@
-- 🖤 **AMOLED theme:** pure black background with brighter chords, numbers and bolder lyrics, easier to read on the keyboard stand. Switch back anytime via ⋮ → Tema.
-- 🧭 **Interactive guide:** on first install the app highlights the real buttons (search, sites, Koleksi, menu, and on the song screen: Do, long-press a chord line, YouTube, metronome, Simpan). Tap the highlighted button to try it right away, or press Lanjut. Replay via ⋮ → Panduan.
-- ✨ After an update, only a short "Diperbarui ke vX" card with what's new is shown.
-- 🧪 Features that can still be inaccurate are marked **EKSPERIMENTAL**: metronome (tempo detection, song sequence), sync to video and automatic modulation suggestions. The list is in ⋮ → Tentang.
+- 🤖 **AI tempo detection:** 🎤 Deteksi now uses the *Beat This!* AI model (runs on the phone, offline) to find the beats. If the AI finds nothing, the old method is used.
+- 📱 **Listen straight from the phone (Android 10+):** the sound of the YouTube video playing in Chord Finder is read directly instead of through the microphone, so room noise doesn't interfere. Android asks for permission each time. The microphone option is still there.
+- 🧾 **App log (⋮ → Log aplikasi):** records what happens in the app (songs opened, YouTube, metronome, updates, errors, crashes, and every AI tempo detection). Stored only on the phone, last 500 lines; share it with ⤴ Bagikan when something goes wrong.

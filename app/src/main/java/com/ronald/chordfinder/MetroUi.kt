@@ -18,6 +18,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.ronald.chordfinder.music.BeatDetector
 import com.ronald.chordfinder.music.Line
 import com.ronald.chordfinder.music.MetroConfig
 import com.ronald.chordfinder.music.SeqItem
@@ -32,6 +33,10 @@ interface MetroHost {
     fun persist()
     fun scrollToLine(src: Int)
     fun requestMic(granted: () -> Unit)
+    /** Video YouTube lagu ini sedang terbuka di layar. */
+    val videoOpen: Boolean
+    /** Minta izin Android untuk mengambil suara HP (MediaProjection). */
+    fun requestCapture(done: (Int, android.content.Intent?) -> Unit)
 }
 
 /** Semua tampilan metronom: tombol, bar ketukan, hitungan besar, panel atur, editor urutan. */
@@ -197,6 +202,7 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
         barSection.text = if (config.useSequence) "" else config.label
         beatBar.visibility = View.VISIBLE
         engine.start(config, Prefs.sound(a), Prefs.voice(a), this)
+        AppLog.i("Metronom mulai ${config.bpm} BPM ${config.beats}/${config.unit}")
         updateButton()
         if (config.useSequence) config.sequence.firstOrNull()?.let { if (Prefs.followScroll(a) && it.line >= 0) host.scrollToLine(it.line) }
     }
@@ -379,7 +385,7 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
             }
         }))
         tools.addView(small(a.pill("🎤 Deteksi") {
-            host.requestMic { detectDialog { v -> setBpm(v) } }
+            detectStart { v -> setBpm(v) }
         }), lp(WRAP, WRAP).apply { leftMargin = a.dp(6) })
         tools.addView(small(a.pill("×2") { setBpm(bpm() * 2) }), lp(WRAP, WRAP).apply { leftMargin = a.dp(6) })
         tools.addView(small(a.pill("÷2") { setBpm(bpm() / 2) }), lp(WRAP, WRAP).apply { leftMargin = a.dp(6) })
@@ -512,24 +518,149 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
         engine.start(prev, Prefs.sound(a), label, object : MetronomeEngine.Listener {})
     }
 
-    private fun detectDialog(result: (Int) -> Unit) {
+    // ------------------------------------------------- deteksi tempo (AI)
+
+    private val detectSeconds = 15
+
+    private fun detectTitle() = android.text.SpannableStringBuilder("🎤 Deteksi tempo")
+        .appendBadge("AI", C.NUMBER).appendExp("EKSP")
+
+    /** Pilih sumber suara (Android 10+), lalu dengarkan dan hitung. */
+    private fun detectStart(result: (Int) -> Unit) {
+        if (android.os.Build.VERSION.SDK_INT < 29) {
+            host.requestMic { detectRun(false, null, result) }
+            return
+        }
+        var fromDevice = host.videoOpen
+        val box = a.vbox().apply { setPadding(a.dp(20), a.dp(8), a.dp(20), 0) }
+        fun card(title: String, sub: String) = a.vbox().apply {
+            setPadding(a.dp(12), a.dp(10), a.dp(12), a.dp(10))
+            addView(a.label(title, 15f, C.TEXT, bold = true))
+            addView(a.label(sub, 13f, C.MUTED).apply { setPadding(0, a.dp(2), 0, 0) })
+            isClickable = true
+        }
+        val dev = card("📱 Langsung dari HP", "Suara video yang diputar di Chord Finder dibaca langsung. Paling akurat dan tidak terganggu suara ruangan.")
+        val mic = card("🎤 Mikrofon", "Untuk lagu dari speaker, tim musik, atau HP lain.")
+        fun paint() {
+            dev.background = rounded(C.BG, a.dpf(12f), a.dp(if (fromDevice) 2 else 1), if (fromDevice) C.CHORD else C.LINE)
+            mic.background = rounded(C.BG, a.dpf(12f), a.dp(if (!fromDevice) 2 else 1), if (!fromDevice) C.CHORD else C.LINE)
+        }
+        dev.setOnClickListener { fromDevice = true; paint() }
+        mic.setOnClickListener { fromDevice = false; paint() }
+        paint()
+        box.addView(dev, lp(MATCH, WRAP).apply { topMargin = a.dp(6) })
+        box.addView(mic, lp(MATCH, WRAP).apply { topMargin = a.dp(10) })
+        AlertDialog.Builder(a).setTitle(detectTitle()).setView(box)
+            .setNegativeButton("Batal", null)
+            .setPositiveButton("Mulai") { _, _ ->
+                if (!fromDevice) { host.requestMic { detectRun(false, null, result) }; return@setPositiveButton }
+                host.requestMic {
+                    host.requestCapture { code, data ->
+                        if (code == android.app.Activity.RESULT_OK && data != null) {
+                            AppLog.ai("Izin Android: diberikan")
+                            detectRun(true, code to data, result)
+                        } else {
+                            AppLog.ai("Izin Android: ditolak")
+                            android.widget.Toast.makeText(a, "Izin ditolak. Bisa pakai Mikrofon atau Tap tempo.", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }.show()
+    }
+
+    private fun detectRun(fromDevice: Boolean, grant: Pair<Int, android.content.Intent>?, result: (Int) -> Unit) {
         val box = a.vbox().apply { setPadding(a.dp(20), a.dp(12), a.dp(20), 0) }
-        val msg = a.label("Putar lagunya sekarang (YouTube, speaker, atau tim). Mendengarkan 12 detik…", 14f, C.TEXT)
+        val big = a.label("", 44f, C.TEXT, bold = true).apply { gravity = Gravity.CENTER; visibility = View.GONE }
+        val msg = a.label(
+            if (fromDevice) "📱 Mendengarkan suara video… $detectSeconds detik lagi"
+            else "Putar lagunya sekarang (YouTube, speaker, atau tim). Mendengarkan $detectSeconds detik…", 14f, C.TEXT)
         val bar = ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100 }
-        box.addView(msg); box.addView(bar, lp(MATCH, WRAP).apply { topMargin = a.dp(12) })
-        box.addView(a.expNote().apply { setPadding(0, a.dp(10), 0, 0) })
-        val d = AlertDialog.Builder(a).setTitle(android.text.SpannableStringBuilder("🎤 Deteksi tempo").appendExp("EKSP")).setView(box)
+        val note = a.expNote().apply { setPadding(0, a.dp(10), 0, 0) }
+        box.addView(big); box.addView(msg); box.addView(bar, lp(MATCH, WRAP).apply { topMargin = a.dp(12) })
+        box.addView(note)
+        var finished = false
+        val d = AlertDialog.Builder(a).setTitle(detectTitle()).setView(box)
             .setNegativeButton("Tutup", null).show()
-        engine.detectTempo(12, { p -> bar.progress = (p * 100).toInt() }) { bpm ->
-            if (!d.isShowing) return@detectTempo
-            if (bpm == null) {
-                msg.text = "Tempo tidak terdeteksi. Coba lebih dekat ke sumber suara, atau pakai Tap tempo."
-            } else {
-                msg.text = "Terdeteksi sekitar $bpm BPM.\nKalau terasa terlalu cepat/lambat, pakai ÷2 atau ×2."
-                result(bpm)
+        d.setOnDismissListener {
+            if (!finished) {
+                AppLog.ai("Dibatalkan")
+                if (fromDevice && android.os.Build.VERSION.SDK_INT >= 29) CaptureService.stop() else engine.cancelMic()
             }
         }
+        AppLog.ai("Mulai deteksi · sumber: ${if (fromDevice) "HP" else "mikrofon"} · $detectSeconds dtk")
+
+        fun analyze(audio: FloatArray?, error: String?) {
+            if (!d.isShowing) return
+            if (audio == null || audio.size < LogMelSize.MIN) {
+                finished = true
+                val why = error ?: if (fromDevice) "Suara HP tidak bisa diambil." else "Mikrofon tidak bisa dipakai."
+                AppLog.e("Deteksi tempo: $why")
+                msg.text = "$why Coba lagi, pakai sumber lain, atau Tap tempo."
+                bar.visibility = View.GONE
+                return
+            }
+            val db = TempoAi.loudnessDb(audio)
+            AppLog.ai("Suara: ${"%.1f".format(audio.size / 22050.0)} dtk · keras rata2 ${"%.0f".format(db)} dB")
+            if (db < -55) {
+                finished = true
+                AppLog.w("Deteksi tempo: hampir tidak ada suara")
+                msg.text = if (fromDevice) "Tidak ada suara dari HP. Pastikan videonya sedang diputar, lalu coba lagi."
+                    else "Suara terlalu pelan. Dekatkan HP ke sumber suara, atau pakai Tap tempo."
+                bar.visibility = View.GONE
+                return
+            }
+            msg.text = "🤖 Menghitung ketukan…"
+            bar.isIndeterminate = true
+            note.text = "Biasanya kurang dari 2 detik."
+            Thread {
+                val ai = try { TempoAi.detect(a, audio) } catch (e: Throwable) { AppLog.e("AI gagal", e); null }
+                val old = try { BeatDetector.estimate(audio, 22050) } catch (e: Throwable) { null }
+                a.runOnUiThread {
+                    finished = true
+                    AppLog.ai("Hasil AI ${ai?.bpm?.let { "$it BPM" } ?: "-"} · cara lama ${old?.let { "$it BPM" } ?: "-"}")
+                    if (!d.isShowing) return@runOnUiThread
+                    bar.visibility = View.GONE
+                    note.text = a.expNote().text
+                    val bpm = ai?.bpm ?: old
+                    if (bpm == null) {
+                        AppLog.ai("Dipakai: - (tidak terdeteksi)")
+                        msg.text = "Tempo tidak terdeteksi. Coba lebih dekat ke sumber suara, atau pakai Tap tempo."
+                        return@runOnUiThread
+                    }
+                    val how = if (ai != null) "AI" else "cara biasa"
+                    AppLog.ai("Dipakai: $bpm BPM ($how)")
+                    big.text = android.text.SpannableStringBuilder("$bpm").apply {
+                        val s0 = length
+                        append(" BPM")
+                        setSpan(android.text.style.RelativeSizeSpan(0.32f), s0, length, 0)
+                        setSpan(android.text.style.ForegroundColorSpan(C.MUTED), s0, length, 0)
+                    }
+                    big.visibility = View.VISIBLE
+                    msg.gravity = Gravity.CENTER
+                    msg.text = "Terdeteksi sekitar $bpm BPM ($how).\nKalau terasa terlalu cepat/lambat, pakai ÷2 atau ×2."
+                    result(bpm)
+                }
+            }.start()
+        }
+
+        if (fromDevice && grant != null && android.os.Build.VERSION.SDK_INT >= 29) {
+            CaptureService.listener = object : CaptureService.Listener {
+                override fun progress(p: Float, secondsLeft: Int) {
+                    bar.progress = (p * 100).toInt()
+                    msg.text = "📱 Mendengarkan suara video… $secondsLeft detik lagi"
+                }
+                override fun done(audio22k: FloatArray?, error: String?) {
+                    CaptureService.listener = null
+                    analyze(audio22k, error)
+                }
+            }
+            CaptureService.start(a, grant.first, grant.second, detectSeconds)
+        } else {
+            engine.recordMic(detectSeconds, { p, _ -> bar.progress = (p * 100).toInt() }) { audio -> analyze(audio, null) }
+        }
     }
+
+    private object LogMelSize { const val MIN = 22050 * 3 }
 
     // ------------------------------------------------- editor urutan
 

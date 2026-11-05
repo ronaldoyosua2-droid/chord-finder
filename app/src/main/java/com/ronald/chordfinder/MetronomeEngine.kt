@@ -262,9 +262,13 @@ class MetronomeEngine(private val ctx: Context) {
 
     // ------------------------------------------------ deteksi tempo
 
-    /** Rekam dari mikrofon selama [seconds] detik lalu tebak BPM. Pastikan izin RECORD_AUDIO sudah ada. */
+    @Volatile private var micCancel = false
+    fun cancelMic() { micCancel = true }
+
+    /** Rekam dari mikrofon selama [seconds] detik (mono 22050 Hz). Pastikan izin RECORD_AUDIO sudah ada. */
     @SuppressLint("MissingPermission")
-    fun detectTempo(seconds: Int, progress: (Float) -> Unit, done: (Int?) -> Unit) {
+    fun recordMic(seconds: Int, progress: (Float, Int) -> Unit, done: (FloatArray?) -> Unit) {
+        micCancel = false
         Thread {
             val rate = 22050
             val minBuf = AudioRecord.getMinBufferSize(rate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
@@ -273,27 +277,33 @@ class MetronomeEngine(private val ctx: Context) {
                     AudioFormat.ENCODING_PCM_16BIT, maxOf(minBuf, 4096) * 2)
             } catch (e: Exception) { null }
             if (rec == null || rec.state != AudioRecord.STATE_INITIALIZED) {
+                rec?.release()
                 main.post { done(null) }; return@Thread
             }
             val total = rate * seconds
             val all = FloatArray(total)
             val buf = ShortArray(2048)
             var got = 0
+            var lastSec = -1
             rec.startRecording()
             try {
-                while (got < total) {
+                while (got < total && !micCancel) {
                     val n = rec.read(buf, 0, minOf(buf.size, total - got))
                     if (n <= 0) break
                     for (i in 0 until n) all[got + i] = buf[i] / 32768f
                     got += n
-                    val p = got.toFloat() / total
-                    main.post { progress(p) }
+                    val left = ((total - got) / rate) + 1
+                    if (left != lastSec) {
+                        lastSec = left
+                        val p = got.toFloat() / total
+                        main.post { progress(p, left) }
+                    }
                 }
             } finally {
                 rec.stop(); rec.release()
             }
-            val bpm = BeatDetector.estimate(all.copyOf(got), rate)
-            main.post { done(bpm) }
+            val out = if (micCancel) null else all.copyOf(got)
+            main.post { done(out) }
         }.start()
     }
 }

@@ -48,6 +48,24 @@ PY
   [ -n "$b" ] && adb shell input tap $b
 }
 
+# Tekan lama tombol yang teksnya cocok penuh dengan regex
+lp_re() {
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null
+  adb pull /sdcard/ui.xml ui.xml >/dev/null
+  b=$(python3 - "$1" <<'PY'
+import re,sys,html
+t=sys.argv[1]; x=open('ui.xml',encoding='utf-8').read()
+for m in re.finditer(r'<node [^>]*>', x):
+    n=m.group(0)
+    tm=re.search(r'text="([^"]*)"', n)
+    if tm and re.fullmatch(t, html.unescape(tm.group(1)).strip()):
+        a=list(map(int,re.findall(r'\d+', re.search(r'bounds="([^"]*)"',n).group(1))))
+        print((a[0]+a[2])//2, (a[1]+a[3])//2); break
+PY
+)
+  [ -n "$b" ] && adb shell input swipe $b $b 1200
+}
+
 # 1. Layar awal + panduan layar utama (pemasangan baru, tema AMOLED bawaan)
 adb shell am start -W -n $PKG/.MainActivity
 shot 01-awal 4
@@ -205,6 +223,39 @@ tap_text "AMOLED"; sleep 3
 tap_text "⋮"; sleep 1
 tap_text "Panduan"
 shot 30-ulang-panduan 2
+
+# 31+. AI tempo: suara metronom diambil langsung dari HP
+tap_text "Lewati panduan"; sleep 1
+tap_text "Koleksi"; sleep 1
+tap_text "Semua lagu"; sleep 1
+tap_text "Lagu Contoh"; sleep 3
+tap_re "♩ ?[0-9]+|♩ Metronom"; sleep 2
+tap_text "▶ Mulai"; sleep 4
+lp_re "■ [0-9]+"; sleep 2
+tap_text "Deteksi"; sleep 2
+shot 31-pilih-sumber 1
+tap_text "Langsung dari HP"; sleep 1
+tap_re "Mulai|MULAI"; sleep 2
+tap_text "While using"; sleep 2
+shot 32-izin-android 1
+tap_re "Start|Start now|Mulai|Mulai sekarang"; sleep 1
+shot 33-mendengar 5
+sleep 14
+shot 34-hasil-ai 4
+adb shell input keyevent 4; sleep 1
+adb shell input keyevent 4; sleep 1
+lp_re "■ [0-9]+|♩ ?[0-9]+"; sleep 1
+adb shell input keyevent 4; sleep 1
+
+# 35. Log aplikasi
+adb shell am start -W -n $PKG/.MainActivity; sleep 1
+adb shell input keyevent 4; sleep 1
+adb shell am start -W -n $PKG/.MainActivity; sleep 2
+tap_text "⋮"; sleep 1
+tap_text "Log aplikasi"
+shot 35-log 2
+tap_text "AI tempo"
+shot 36-log-ai 1.5
 
 adb logcat -d -t 300 > shots/logcat.txt
 ls -la shots

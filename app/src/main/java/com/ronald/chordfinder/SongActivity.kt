@@ -169,10 +169,13 @@ class SongActivity : AppCompatActivity() {
             override fun persist() = persistIfSaved()
             override fun scrollToLine(src: Int) = this@SongActivity.scrollToLine(src)
             override fun requestMic(granted: () -> Unit) = this@SongActivity.requestMic(granted)
+            override val videoOpen get() = this@SongActivity.playerBox.visibility == View.VISIBLE
+            override fun requestCapture(done: (Int, Intent?) -> Unit) = this@SongActivity.requestCapture(done)
         })
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(buildUi().apply { fitSystemBars() })
         reparse()
+        AppLog.i("Buka lagu \"${song.title}\" (${song.source.takeIf { it.isNotBlank() }?.let { Uri.parse(it).host?.removePrefix("www.") } ?: "manual"})")
         metro.initFrom(intent.getIntExtra(EXTRA_BPM, 0), intent.getStringExtra(EXTRA_SIG) ?: "")
         updateSongNote()
         updateYtCard()
@@ -714,6 +717,24 @@ class SongActivity : AppCompatActivity() {
         scroll.smoothScrollTo(0, y.coerceAtLeast(0))
     }
 
+    // Izin Android untuk mengambil suara HP (deteksi tempo "Langsung dari HP")
+    private var captureDone: ((Int, Intent?) -> Unit)? = null
+    private val captureLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { r -> captureDone?.invoke(r.resultCode, r.data); captureDone = null }
+
+    private fun requestCapture(done: (Int, Intent?) -> Unit) {
+        if (android.os.Build.VERSION.SDK_INT < 29) { done(RESULT_CANCELED, null); return }
+        val mpm = getSystemService(android.media.projection.MediaProjectionManager::class.java)
+        val intent = if (android.os.Build.VERSION.SDK_INT >= 34)
+            mpm.createScreenCaptureIntent(android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay())
+        else mpm.createScreenCaptureIntent()
+        captureDone = done
+        try { captureLauncher.launch(intent) } catch (e: Exception) {
+            AppLog.e("Izin ambil suara HP tidak bisa dibuka", e); captureDone = null; done(RESULT_CANCELED, null)
+        }
+    }
+
     private fun requestMic(granted: () -> Unit) {
         if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
             granted(); return
@@ -843,7 +864,10 @@ class SongActivity : AppCompatActivity() {
         if (!metro.syncRunning) { metro.startSynced(videoNow()); return }
         val drift = (videoNow() - song.syncOffset) - metro.syncPosition()
         // Video digeser / tersendat: mulai ulang di posisi yang benar
-        if (Math.abs(drift) > 0.25) metro.startSynced(videoNow())
+        if (Math.abs(drift) > 0.25) {
+            AppLog.w("Sinkron video: geser ${"%.2f".format(drift)} dtk, diulang")
+            metro.startSynced(videoNow())
+        }
     }
 
     private fun updateSyncTools() {
@@ -1144,6 +1168,7 @@ class SongActivity : AppCompatActivity() {
     private inner class Bridge {
         @JavascriptInterface
         fun state(s: Int) = runOnUiThread {
+            if (s == 1 && !playing) AppLog.i("YouTube: diputar (${song.ytId})")
             playing = s == 1 || s == 3
             updateYtButton()
         }
@@ -1158,6 +1183,7 @@ class SongActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun error(code: Int) = runOnUiThread {
+            AppLog.e("YouTube: video tidak bisa diputar, kode $code (${song.ytId})")
             val msg = "Video ini tidak bisa diputar di dalam aplikasi (kode $code). " +
                 "Biasanya karena pemilik video membatasinya, atau YouTube meminta verifikasi. " +
                 "Pilih video lain atau buka di aplikasi YouTube."

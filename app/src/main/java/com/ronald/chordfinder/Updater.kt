@@ -59,7 +59,7 @@ object Updater {
     fun check(a: AppCompatActivity, manual: Boolean) {
         if (manual) Toast.makeText(a, "Mengecek update…", Toast.LENGTH_SHORT).show()
         pool.execute {
-            val r = try { fetch() } catch (e: Exception) { null }
+            val r = try { fetch() } catch (e: Exception) { AppLog.e("Gagal cek update", e); null }
             main.post {
                 if (a.isFinishing) return@post
                 if (r == null) {
@@ -68,6 +68,7 @@ object Updater {
                 }
                 sp(a).edit().putLong("updCheck", System.currentTimeMillis()).apply()
                 val cur = currentBuild(a)
+                AppLog.i("Cek update: terbaru di GitHub ${r.tag}, terpasang v${versionName(a)}")
                 val skipped = sp(a).getInt("updSkip", 0)
                 when {
                     r.build <= cur -> if (manual) Toast.makeText(a, "Sudah versi terbaru (v${versionName(a)})", Toast.LENGTH_LONG).show()
@@ -205,7 +206,7 @@ object Updater {
                 }
                 c.disconnect()
                 ok = total <= 0 || got >= total
-            } catch (e: Exception) { ok = false }
+            } catch (e: Exception) { ok = false; AppLog.e("Gagal unduh update", e) }
             main.post {
                 dlg.dismiss()
                 if (!ok) {

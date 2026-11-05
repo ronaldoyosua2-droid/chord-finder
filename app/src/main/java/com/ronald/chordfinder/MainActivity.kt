@@ -514,6 +514,7 @@ class MainActivity : AppCompatActivity() {
                     "Daftar ibadah: ${r.setlistsAdded} baru, ${r.setlistsUpdated} diperbarui")
                 .setPositiveButton("OK", null).show()
         } catch (e: Exception) {
+            AppLog.e("Impor koleksi gagal", e)
             AlertDialog.Builder(this).setTitle("Impor gagal")
                 .setMessage("File ini bukan hasil Ekspor Koleksi Chord Finder, atau rusak.")
                 .setPositiveButton("OK", null).show()
@@ -530,7 +531,8 @@ class MainActivity : AppCompatActivity() {
         pm.menu.add(0, 4, 3, news)
         pm.menu.add(0, 6, 4, "🎨 Tema: " + if (C.amoled) "AMOLED" else "Biasa")
         pm.menu.add(0, 7, 5, "🧭 Panduan")
-        pm.menu.add(0, 5, 6, "ⓘ Tentang · v${Updater.versionName(this)}")
+        pm.menu.add(0, 8, 6, "🧾 Log aplikasi")
+        pm.menu.add(0, 5, 7, "ⓘ Tentang · v${Updater.versionName(this)}")
         pm.setOnMenuItemClickListener {
             when (it.itemId) {
                 1 -> exportLauncher.launch("ChordFinder-koleksi-${Dates.today()}.json")
@@ -540,6 +542,7 @@ class MainActivity : AppCompatActivity() {
                 5 -> Updater.showAbout(this)
                 6 -> themeDialog()
                 7 -> Guide.replay(this, guideSteps())
+                8 -> startActivity(Intent(this, LogActivity::class.java))
             }
             true
         }

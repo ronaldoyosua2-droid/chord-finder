@@ -1,4 +1,9 @@
 [
+  {"v": "1.0.12", "date": "5 Nov 2026", "items": [
+    ["new", "AI tempo detection with the Beat This! model, running offline on the phone; falls back to the old method"],
+    ["new", "Listen straight from the phone (Android 10+): reads the sound of the video playing in the app instead of the microphone"],
+    ["new", "App log (⋮ → Log aplikasi): events, errors, crashes and AI tempo details; stored on the phone only, share with ⤴ Bagikan"]
+  ]},
   {"v": "1.0.11", "date": "4 Nov 2026", "items": [
     ["new", "AMOLED theme: pure black background, brighter chords and numbers, bolder lyrics. Switch via ⋮ → Tema"],
     ["new", "Interactive guide on the real buttons for first-time users; tap the highlighted button to try it. Replay via ⋮ → Panduan"],

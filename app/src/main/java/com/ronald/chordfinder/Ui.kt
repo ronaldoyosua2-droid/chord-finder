@@ -154,11 +154,14 @@ class BadgeSpan(private val bg: Int, private val fg: Int, private val scale: Flo
 }
 
 /** Tambahkan lencana EKSPERIMENTAL (atau [word]) di akhir [sb]. */
-fun android.text.SpannableStringBuilder.appendExp(word: String = "EKSPERIMENTAL"): android.text.SpannableStringBuilder {
+fun android.text.SpannableStringBuilder.appendExp(word: String = "EKSPERIMENTAL") = appendBadge(word, C.SECTION)
+
+/** Tambahkan lencana berwarna [bg] (tulisan hitam) di akhir teks. */
+fun android.text.SpannableStringBuilder.appendBadge(word: String, bg: Int): android.text.SpannableStringBuilder {
     append("  ")
     val s = length
     append(word)
-    setSpan(BadgeSpan(C.SECTION, 0xFF000000.toInt()), s, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    setSpan(BadgeSpan(bg, 0xFF000000.toInt()), s, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
     return this
 }
 

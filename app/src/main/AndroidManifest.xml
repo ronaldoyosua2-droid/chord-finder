@@ -6,8 +6,12 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Untuk memasang update yang diunduh dari GitHub -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Deteksi tempo "Langsung dari HP": mengambil suara yang diputar di HP (Android 10+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
 
     <application
+        android:name=".App"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
@@ -41,6 +45,15 @@
             android:name=".SongActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
+        <activity
+            android:name=".LogActivity"
+            android:exported="false" />
+
+        <service
+            android:name=".CaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"
