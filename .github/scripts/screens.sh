@@ -260,7 +260,8 @@ adb shell input tap $L; sleep 1
 adb shell input tap $S; sleep 3
 shot 32-izin-android 0.5
 P=$(xy_re "^(Start|Start now|Mulai|Mulai sekarang)$"); echo "izin $P"
-[ -n "$P" ] && adb shell input tap $P
+# Tombol START dialog Android (posisi tetap di emulator 1080x2400 bila layar tidak terbaca)
+[ -n "$P" ] && adb shell input tap $P || adb shell input tap 875 1667
 shot 33-mendengar 5
 sleep 14
 shot 34-hasil-ai 4
