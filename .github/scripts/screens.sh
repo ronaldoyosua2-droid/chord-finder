@@ -229,6 +229,7 @@ tap_text "Lewati panduan"; sleep 1
 tap_text "Koleksi"; sleep 1
 tap_text "Semua lagu"; sleep 1
 tap_text "Lagu Contoh"; sleep 3
+tap_text "Lewati panduan"; sleep 1
 tap_re "♩ ?[0-9]+|♩ Metronom"; sleep 2
 tap_text "▶ Mulai"; sleep 4
 lp_re "■ [0-9]+"; sleep 2
