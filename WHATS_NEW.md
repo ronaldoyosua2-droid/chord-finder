@@ -1,3 +1,3 @@
-- 🤖 **AI tempo detection:** 🎤 Deteksi now uses the *Beat This!* AI model (runs on the phone, offline) to find the beats. If the AI finds nothing, the old method is used.
-- 📱 **Listen straight from the phone (Android 10+):** the sound of the YouTube video playing in Chord Finder is read directly instead of through the microphone, so room noise doesn't interfere. Android asks for permission each time. The microphone option is still there.
-- 🧾 **App log (⋮ → Log aplikasi):** records what happens in the app (songs opened, YouTube, metronome, updates, errors, crashes, and every AI tempo detection). Stored only on the phone, last 500 lines; share it with ⤴ Bagikan when something goes wrong.
+- ▶ **Tempo detection "Langsung dari HP":** the video is now played automatically after you give permission (Android's permission dialog paused it, so the AI heard only silence). Listening starts once the video is really playing, and a paused video is paused again afterwards.
+- 💬 If the song's video isn't open yet, the app asks you to open it first or use the microphone.
+- 🧾 The app log now records whether the video was playing while listening, and tells you when the phone blocks capturing video sound.

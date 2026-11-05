@@ -117,6 +117,8 @@ class SongActivity : AppCompatActivity() {
     private lateinit var playerBox: LinearLayout
     private var player: WebView? = null
     private var playing = false
+    /** Status terakhir pemutar YouTube (1 = sedang diputar). */
+    private var ytState = -1
     private var searching = false
     private var results: List<Video>? = null
 
@@ -170,6 +172,9 @@ class SongActivity : AppCompatActivity() {
             override fun scrollToLine(src: Int) = this@SongActivity.scrollToLine(src)
             override fun requestMic(granted: () -> Unit) = this@SongActivity.requestMic(granted)
             override val videoOpen get() = this@SongActivity.playerBox.visibility == View.VISIBLE
+            override val videoPlaying get() = this@SongActivity.player != null && this@SongActivity.ytState == 1
+            override fun playVideo() { this@SongActivity.player?.evaluateJavascript("play()", null) }
+            override fun pauseVideo() { this@SongActivity.player?.evaluateJavascript("pause()", null) }
             override fun requestCapture(done: (Int, Intent?) -> Unit) = this@SongActivity.requestCapture(done)
         })
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -1169,6 +1174,7 @@ class SongActivity : AppCompatActivity() {
         @JavascriptInterface
         fun state(s: Int) = runOnUiThread {
             if (s == 1 && !playing) AppLog.i("YouTube: diputar (${song.ytId})")
+            ytState = s
             playing = s == 1 || s == 3
             updateYtButton()
         }

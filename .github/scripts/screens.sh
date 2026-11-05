@@ -246,6 +246,9 @@ tap_text "Koleksi"; sleep 1
 tap_text "Semua lagu"; sleep 1
 tap_text "Lagu Contoh"; sleep 3
 tap_text "Lewati panduan"; sleep 1
+# Buka video (di emulator YouTube menolak diputar: tutup pesan kesalahannya)
+tap_re "▶"; sleep 12
+adb shell input keyevent 4; sleep 1
 M=$(xy_re "^(♩ ?[0-9]+|♩ Metronom)$"); echo "metro $M"
 adb shell input tap $M; sleep 2
 D=$(xy_re "Deteksi$"); G=$(xy_re "^▶ Mulai$"); echo "deteksi $D mulai $G"
@@ -262,8 +265,9 @@ shot 32-izin-android 0.5
 P=$(xy_re "^(Start|Start now|Mulai|Mulai sekarang)$"); echo "izin $P"
 # Tombol START dialog Android (posisi tetap di emulator 1080x2400 bila layar tidak terbaca)
 [ -n "$P" ] && adb shell input tap $P || adb shell input tap 875 1667
-shot 33-mendengar 5
-sleep 14
+shot 33-memutar-video 3
+shot 33b-mendengar 9
+sleep 16
 shot 34-hasil-ai 4
 adb shell input keyevent 4; sleep 1
 adb shell input keyevent 4; sleep 1

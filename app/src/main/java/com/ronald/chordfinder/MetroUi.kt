@@ -35,6 +35,10 @@ interface MetroHost {
     fun requestMic(granted: () -> Unit)
     /** Video YouTube lagu ini sedang terbuka di layar. */
     val videoOpen: Boolean
+    /** Video sedang benar-benar diputar (berbunyi). */
+    val videoPlaying: Boolean
+    fun playVideo()
+    fun pauseVideo()
     /** Minta izin Android untuk mengambil suara HP (MediaProjection). */
     fun requestCapture(done: (Int, android.content.Intent?) -> Unit)
 }
@@ -528,7 +532,7 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
     /** Pilih sumber suara (Android 10+), lalu dengarkan dan hitung. */
     private fun detectStart(result: (Int) -> Unit) {
         if (android.os.Build.VERSION.SDK_INT < 29) {
-            host.requestMic { detectRun(false, null, result) }
+            host.requestMic { detectRun(false, null, false, result) }
             return
         }
         var fromDevice = host.videoOpen
@@ -553,12 +557,20 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
         AlertDialog.Builder(a).setTitle(detectTitle()).setView(box)
             .setNegativeButton("Batal", null)
             .setPositiveButton("Mulai") { _, _ ->
-                if (!fromDevice) { host.requestMic { detectRun(false, null, result) }; return@setPositiveButton }
+                if (!fromDevice) { host.requestMic { detectRun(false, null, false, result) }; return@setPositiveButton }
+                if (!host.videoOpen) {
+                    AppLog.ai("Langsung dari HP: video belum dibuka")
+                    AlertDialog.Builder(a).setTitle(detectTitle())
+                        .setMessage("Buka video lagunya dulu (▶), atau pilih Mikrofon.")
+                        .setPositiveButton("OK", null).show()
+                    return@setPositiveButton
+                }
+                val wasPlaying = host.videoPlaying
                 host.requestMic {
                     host.requestCapture { code, data ->
                         if (code == android.app.Activity.RESULT_OK && data != null) {
                             AppLog.ai("Izin Android: diberikan")
-                            detectRun(true, code to data, result)
+                            detectRun(true, code to data, wasPlaying, result)
                         } else {
                             AppLog.ai("Izin Android: ditolak")
                             android.widget.Toast.makeText(a, "Izin ditolak. Bisa pakai Mikrofon atau Tap tempo.", android.widget.Toast.LENGTH_LONG).show()
@@ -568,7 +580,7 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
             }.show()
     }
 
-    private fun detectRun(fromDevice: Boolean, grant: Pair<Int, android.content.Intent>?, result: (Int) -> Unit) {
+    private fun detectRun(fromDevice: Boolean, grant: Pair<Int, android.content.Intent>?, wasPlaying: Boolean, result: (Int) -> Unit) {
         val box = a.vbox().apply { setPadding(a.dp(20), a.dp(12), a.dp(20), 0) }
         val big = a.label("", 44f, C.TEXT, bold = true).apply { gravity = Gravity.CENTER; visibility = View.GONE }
         val msg = a.label(
@@ -581,10 +593,14 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
         var finished = false
         val d = AlertDialog.Builder(a).setTitle(detectTitle()).setView(box)
             .setNegativeButton("Tutup", null).show()
+        var videoOn = false
         d.setOnDismissListener {
             if (!finished) {
                 AppLog.ai("Dibatalkan")
-                if (fromDevice && android.os.Build.VERSION.SDK_INT >= 29) CaptureService.stop() else engine.cancelMic()
+                if (fromDevice && android.os.Build.VERSION.SDK_INT >= 29) {
+                    CaptureService.stop()
+                    if (!wasPlaying) host.pauseVideo()
+                } else engine.cancelMic()
             }
         }
         AppLog.ai("Mulai deteksi · sumber: ${if (fromDevice) "HP" else "mikrofon"} · $detectSeconds dtk")
@@ -603,9 +619,20 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
             AppLog.ai("Suara: ${"%.1f".format(audio.size / 22050.0)} dtk · keras rata2 ${"%.0f".format(db)} dB")
             if (db < -55) {
                 finished = true
-                AppLog.w("Deteksi tempo: hampir tidak ada suara")
-                msg.text = if (fromDevice) "Tidak ada suara dari HP. Pastikan videonya sedang diputar, lalu coba lagi."
-                    else "Suara terlalu pelan. Dekatkan HP ke sumber suara, atau pakai Tap tempo."
+                msg.text = when {
+                    fromDevice && videoOn -> {
+                        AppLog.w("Deteksi tempo: video diputar tapi suara HP kosong (HP memblokir pengambilan suara?)")
+                        "Video sedang diputar, tapi suaranya tidak bisa diambil. Sepertinya HP ini memblokir pengambilan suara video. Pilih 🎤 Mikrofon untuk mendeteksi."
+                    }
+                    fromDevice -> {
+                        AppLog.w("Deteksi tempo: hampir tidak ada suara (video tidak diputar)")
+                        "Tidak ada suara dari HP. Pastikan videonya sedang diputar, lalu coba lagi."
+                    }
+                    else -> {
+                        AppLog.w("Deteksi tempo: hampir tidak ada suara")
+                        "Suara terlalu pelan. Dekatkan HP ke sumber suara, atau pakai Tap tempo."
+                    }
+                }
                 bar.visibility = View.GONE
                 return
             }
@@ -644,17 +671,47 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
         }
 
         if (fromDevice && grant != null && android.os.Build.VERSION.SDK_INT >= 29) {
-            CaptureService.listener = object : CaptureService.Listener {
-                override fun progress(p: Float, secondsLeft: Int) {
-                    bar.progress = (p * 100).toInt()
-                    msg.text = "📱 Mendengarkan suara video… $secondsLeft detik lagi"
+            fun begin(playingAtStart: Boolean) {
+                if (!d.isShowing) return
+                AppLog.ai("Status video saat mulai mendengar: ${if (playingAtStart) "diputar" else "dijeda"}")
+                videoOn = playingAtStart
+                msg.text = "📱 Mendengarkan suara video… $detectSeconds detik lagi"
+                CaptureService.listener = object : CaptureService.Listener {
+                    override fun progress(p: Float, secondsLeft: Int) {
+                        bar.progress = (p * 100).toInt()
+                        msg.text = "📱 Mendengarkan suara video… $secondsLeft detik lagi"
+                        if (host.videoPlaying) videoOn = true
+                    }
+                    override fun done(audio22k: FloatArray?, error: String?) {
+                        CaptureService.listener = null
+                        val playingAtEnd = host.videoPlaying
+                        AppLog.ai("Status video saat selesai mendengar: ${if (playingAtEnd) "diputar" else "dijeda"}")
+                        if (!wasPlaying) host.pauseVideo()
+                        analyze(audio22k, error)
+                    }
                 }
-                override fun done(audio22k: FloatArray?, error: String?) {
-                    CaptureService.listener = null
-                    analyze(audio22k, error)
+                CaptureService.start(a, grant.first, grant.second, detectSeconds)
+            }
+            // Dialog izin Android membuat video terjeda: putar lagi, lalu tunggu sampai benar-benar berbunyi
+            msg.text = "▶ Memutar video…"
+            if (!host.videoPlaying) {
+                host.playVideo()
+                AppLog.ai("Video diputar otomatis untuk deteksi")
+            }
+            var waited = 0
+            fun waitPlay() {
+                if (!d.isShowing) return
+                when {
+                    host.videoPlaying -> bar.postDelayed({ begin(true) }, 300)
+                    waited >= 8000 -> begin(false)
+                    else -> {
+                        waited += 250
+                        if (waited % 2000 == 0) host.playVideo()
+                        bar.postDelayed({ waitPlay() }, 250)
+                    }
                 }
             }
-            CaptureService.start(a, grant.first, grant.second, detectSeconds)
+            waitPlay()
         } else {
             engine.recordMic(detectSeconds, { p, _ -> bar.progress = (p * 100).toInt() }) { audio -> analyze(audio, null) }
         }

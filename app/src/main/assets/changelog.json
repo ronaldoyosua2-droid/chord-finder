@@ -1,4 +1,9 @@
 [
+  {"v": "1.0.13", "date": "5 Nov 2026", "items": [
+    ["fix", "Tempo detection from the phone: the video is played automatically after permission is given (it was paused, so only silence was heard) and paused again afterwards if it was paused before"],
+    ["new", "Message to open the song's video first (or use the microphone) when choosing Langsung dari HP"],
+    ["new", "App log records the video state while listening and warns when the phone blocks capturing video sound"]
+  ]},
   {"v": "1.0.12", "date": "5 Nov 2026", "items": [
     ["new", "AI tempo detection with the Beat This! model, running offline on the phone; falls back to the old method"],
     ["new", "Listen straight from the phone (Android 10+): reads the sound of the video playing in the app instead of the microphone"],
