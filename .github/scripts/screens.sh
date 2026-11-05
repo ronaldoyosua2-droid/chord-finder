@@ -224,28 +224,49 @@ tap_text "⋮"; sleep 1
 tap_text "Panduan"
 shot 30-ulang-panduan 2
 
-# 31+. AI tempo: suara metronom diambil langsung dari HP
+# 31+. AI tempo: suara metronom diambil langsung dari HP.
+# Saat metronom jalan, uiautomator tidak bisa membaca layar (animasi terus), jadi posisi tombol dicatat dulu saat diam.
+xy_re() {
+  adb shell uiautomator dump /sdcard/ui.xml >/dev/null
+  adb pull /sdcard/ui.xml ui.xml >/dev/null
+  python3 - "$1" <<'PY'
+import re,sys,html
+t=sys.argv[1]; x=open('ui.xml',encoding='utf-8').read()
+for m in re.finditer(r'<node [^>]*>', x):
+    n=m.group(0)
+    tm=re.search(r'text="([^"]*)"', n)
+    if tm and re.search(t, html.unescape(tm.group(1)).strip()):
+        a=list(map(int,re.findall(r'\d+', re.search(r'bounds="([^"]*)"',n).group(1))))
+        print((a[0]+a[2])//2, (a[1]+a[3])//2); break
+PY
+}
+adb shell pm grant $PKG android.permission.RECORD_AUDIO || true
 tap_text "Lewati panduan"; sleep 1
 tap_text "Koleksi"; sleep 1
 tap_text "Semua lagu"; sleep 1
 tap_text "Lagu Contoh"; sleep 3
 tap_text "Lewati panduan"; sleep 1
-tap_re "♩ ?[0-9]+|♩ Metronom"; sleep 2
-tap_text "▶ Mulai"; sleep 4
-lp_re "■ [0-9]+"; sleep 2
-tap_text "Deteksi"; sleep 2
-shot 31-pilih-sumber 1
-tap_text "Langsung dari HP"; sleep 1
-tap_re "Mulai|MULAI"; sleep 2
-tap_text "While using"; sleep 2
-shot 32-izin-android 1
-tap_re "Start|Start now|Mulai|Mulai sekarang"; sleep 1
+M=$(xy_re "^(♩ ?[0-9]+|♩ Metronom)$"); echo "metro $M"
+adb shell input tap $M; sleep 2
+D=$(xy_re "Deteksi$"); G=$(xy_re "^▶ Mulai$"); echo "deteksi $D mulai $G"
+adb shell input tap $D; sleep 2
+L=$(xy_re "^📱 Langsung dari HP$"); S=$(xy_re "^(Mulai|MULAI)$"); echo "langsung $L ok $S"
+adb shell input keyevent 4; sleep 1
+adb shell input tap $G; sleep 4
+adb shell input swipe $M $M 1200; sleep 2
+adb shell input tap $D; sleep 2
+shot 31-pilih-sumber 0.5
+adb shell input tap $L; sleep 1
+adb shell input tap $S; sleep 3
+shot 32-izin-android 0.5
+P=$(xy_re "^(Start|Start now|Mulai|Mulai sekarang)$"); echo "izin $P"
+[ -n "$P" ] && adb shell input tap $P
 shot 33-mendengar 5
 sleep 14
 shot 34-hasil-ai 4
 adb shell input keyevent 4; sleep 1
 adb shell input keyevent 4; sleep 1
-lp_re "■ [0-9]+|♩ ?[0-9]+"; sleep 1
+adb shell input tap $M; sleep 1
 adb shell input keyevent 4; sleep 1
 
 # 35. Log aplikasi
