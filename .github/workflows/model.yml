@@ -1,0 +1,30 @@
+name: Model
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths: [".github/scripts/ai/export_model.py", ".github/workflows/model.yml"]
+permissions:
+  contents: write
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          pip install "numpy<2" torch==2.4.1 torchaudio==2.4.1 --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+          pip install einops rotary-embedding-torch soxr onnx==1.16.2 onnxruntime==1.20.1 "git+https://github.com/CPJKU/beat_this.git"
+      - name: Export
+        run: python .github/scripts/ai/export_model.py 2>&1 | tee .github/scripts/ai/export.log
+      - name: Commit
+        if: always()
+        run: |
+          git config user.name ronaldoyosua2-droid
+          git config user.email ronaldoyosua2@gmail.com
+          git add -A app/src/main/assets/ai app/src/test/resources/ai .github/scripts/ai
+          git commit -m "Model AI Beat This! small0 (ONNX) + data referensi" || true
+          git push
