@@ -1,0 +1,29 @@
+Downloading: "https://cloud.cp.jku.at/public.php/dav/files/7ik4RrBKTS273gp/small0.ckpt" to /home/runner/.cache/torch/hub/checkpoints/beat_this-small0.ckpt
+1.6%3.1%4.7%6.2%7.8%9.3%10.9%12.4%14.0%15.5%17.1%18.6%20.2%21.7%23.3%24.8%26.4%27.9%29.5%31.0%32.6%34.1%35.7%37.2%38.8%40.3%41.9%43.4%45.0%46.5%48.1%49.6%51.2%52.7%54.3%55.8%57.4%58.9%60.5%62.0%63.6%65.1%66.7%68.2%69.8%71.3%72.9%74.4%76.0%77.5%79.1%80.6%82.2%83.8%85.3%86.9%88.4%90.0%91.5%93.1%94.6%96.2%97.7%99.3%100.0%
+/opt/hostedtoolcache/Python/3.11.18/x64/lib/python3.11/site-packages/beat_this/model/beat_tracker.py:291: TracerWarning: Using len to get tensor shape might cause the trace to be incorrect. Recommended usage would be tensor.shape[0]. Passing a tensor of different shape might lead to errors or silently give incorrect results.
+  b = len(x)
+/opt/hostedtoolcache/Python/3.11.18/x64/lib/python3.11/site-packages/beat_this/model/roformer.py:117: TracerWarning: Iterating over a tensor might cause the trace to be incorrect. Passing a tensor of different shape won't change the number of iterations executed (and might lead to errors or silently give incorrect results).
+  q, k, v = rearrange(
+/opt/hostedtoolcache/Python/3.11.18/x64/lib/python3.11/site-packages/rotary_embedding_torch/rotary_embedding_torch.py:334: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  if (
+/opt/hostedtoolcache/Python/3.11.18/x64/lib/python3.11/site-packages/rotary_embedding_torch/rotary_embedding_torch.py:337: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  (offset + seq_len) <= self.cached_freqs_seq_len
+/opt/hostedtoolcache/Python/3.11.18/x64/lib/python3.11/site-packages/rotary_embedding_torch/rotary_embedding_torch.py:346: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  if should_cache and offset == 0:
+/opt/hostedtoolcache/Python/3.11.18/x64/lib/python3.11/site-packages/rotary_embedding_torch/rotary_embedding_torch.py:63: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  assert rot_dim <= t.shape[-1], f'feature dimension {t.shape[-1]} is not of sufficient size to rotate in all the positions {rot_dim}'
+/opt/hostedtoolcache/Python/3.11.18/x64/lib/python3.11/site-packages/beat_this/model/beat_tracker.py:318: TracerWarning: Iterating over a tensor might cause the trace to be incorrect. Passing a tensor of different shape won't change the number of iterations executed (and might lead to errors or silently give incorrect results).
+  beat, downbeat = rearrange(beat_downbeat, "b t c -> c b t", c=2)
+params: 2099960
+onnx size MB: 10.498995
+68 15.0 -> 68.18 beats 18 diff 1.811981201171875e-05 ort 0.218
+68 12.0 -> 68.18 beats 14 diff 1.5139579772949219e-05 ort 0.159
+76 15.0 -> 75.95 beats 19 diff 1.049041748046875e-05 ort 0.214
+76 12.0 -> 75.0 beats 16 diff 9.059906005859375e-06 ort 0.159
+100 15.0 -> 100.0 beats 26 diff 2.6226043701171875e-05 ort 0.198
+100 12.0 -> 100.0 beats 21 diff 6.437301635742188e-05 ort 0.169
+128 15.0 -> 130.43 beats 33 diff 3.421306610107422e-05 ort 0.197
+128 12.0 -> 130.43 beats 26 diff 2.1457672119140625e-05 ort 0.15
+150 15.0 -> 150.0 beats 38 diff 1.5974044799804688e-05 ort 0.202
+150 12.0 -> 150.0 beats 31 diff 1.0013580322265625e-05 ort 0.153
+ref bpm 100.00000000000006 frames 751

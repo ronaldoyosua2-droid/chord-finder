@@ -1,0 +1,62 @@
+{
+ "68bpm_15s": {
+  "est": 68.18,
+  "beats": 18,
+  "max_diff_torch_onnx": 1.811981201171875e-05,
+  "ort_sec": 0.218
+ },
+ "68bpm_12s": {
+  "est": 68.18,
+  "beats": 14,
+  "max_diff_torch_onnx": 1.5139579772949219e-05,
+  "ort_sec": 0.159
+ },
+ "76bpm_15s": {
+  "est": 75.95,
+  "beats": 19,
+  "max_diff_torch_onnx": 1.049041748046875e-05,
+  "ort_sec": 0.214
+ },
+ "76bpm_12s": {
+  "est": 75.0,
+  "beats": 16,
+  "max_diff_torch_onnx": 9.059906005859375e-06,
+  "ort_sec": 0.159
+ },
+ "100bpm_15s": {
+  "est": 100.0,
+  "beats": 26,
+  "max_diff_torch_onnx": 2.6226043701171875e-05,
+  "ort_sec": 0.198
+ },
+ "100bpm_12s": {
+  "est": 100.0,
+  "beats": 21,
+  "max_diff_torch_onnx": 6.437301635742188e-05,
+  "ort_sec": 0.169
+ },
+ "128bpm_15s": {
+  "est": 130.43,
+  "beats": 33,
+  "max_diff_torch_onnx": 3.421306610107422e-05,
+  "ort_sec": 0.197
+ },
+ "128bpm_12s": {
+  "est": 130.43,
+  "beats": 26,
+  "max_diff_torch_onnx": 2.1457672119140625e-05,
+  "ort_sec": 0.15
+ },
+ "150bpm_15s": {
+  "est": 150.0,
+  "beats": 38,
+  "max_diff_torch_onnx": 1.5974044799804688e-05,
+  "ort_sec": 0.202
+ },
+ "150bpm_12s": {
+  "est": 150.0,
+  "beats": 31,
+  "max_diff_torch_onnx": 1.0013580322265625e-05,
+  "ort_sec": 0.153
+ }
+}
