@@ -31,6 +31,7 @@ jobs:
           set -o pipefail
           gradle :app:testReleaseUnitTest :app:assembleRelease -q 2>&1 | tee build.log
           mkdir -p out && cp app/build/outputs/apk/release/app-release.apk out/app.apk
+          echo "APK size: $(stat -c %s out/app.apk) bytes" | tee -a build.log
 
       - name: Diagnosa YouTube
         run: bash .github/scripts/ytprobe.sh
