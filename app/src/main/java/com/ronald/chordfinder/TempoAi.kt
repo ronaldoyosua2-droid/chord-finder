@@ -23,7 +23,9 @@ object TempoAi {
     private var session: OrtSession? = null
     private var fb: FloatArray? = null
 
-    data class Result(val bpm: Int, val exact: Double, val beats: Int, val melMs: Long, val modelMs: Long)
+    /** [times]/[downbeats] = waktu ketukan & tebakan ketukan 1 di dalam rekaman (detik). */
+    data class Result(val bpm: Int, val exact: Double, val beats: Int, val melMs: Long, val modelMs: Long,
+                      val times: DoubleArray, val downbeats: DoubleArray)
 
     @Synchronized
     private fun load(ctx: Context) {
@@ -47,11 +49,15 @@ object TempoAi {
         val flat = FloatArray(frames * LogMel.MELS)
         for (t in mel.indices) System.arraycopy(mel[t], 0, flat, (t + BORDER) * LogMel.MELS, LogMel.MELS)
         var logits = FloatArray(0)
+        var downLogits = FloatArray(0)
         OnnxTensor.createTensor(env!!, FloatBuffer.wrap(flat), longArrayOf(1, frames.toLong(), LogMel.MELS.toLong())).use { input ->
             session!!.run(mapOf("spect" to input)).use { r ->
                 @Suppress("UNCHECKED_CAST")
                 val beat = (r.get(0).value as Array<FloatArray>)[0]
                 logits = beat.copyOfRange(BORDER, beat.size - BORDER)
+                @Suppress("UNCHECKED_CAST")
+                val down = (r.get(1).value as Array<FloatArray>)[0]
+                downLogits = down.copyOfRange(BORDER, down.size - BORDER)
             }
         }
         val t2 = System.currentTimeMillis()
@@ -60,7 +66,7 @@ object TempoAi {
             AppLog.ai("Model: ${t2 - t1} ms · ${times.size} ketukan (terlalu sedikit)")
         }
         AppLog.ai("Mel: ${t1 - t0} ms · Model: ${t2 - t1} ms · ${times.size} ketukan")
-        return Result(bpm.roundToInt(), bpm, times.size, t1 - t0, t2 - t1)
+        return Result(bpm.roundToInt(), bpm, times.size, t1 - t0, t2 - t1, times, BeatPost.beatTimes(downLogits))
     }
 
     /** Kerasnya suara rata-rata dalam dB (0 dB = maksimum). */

@@ -44,4 +44,16 @@ class BeatAiTest {
         assertEquals(128.0, BeatPost.bpm(t)!!, 0.5)
         assertEquals(null, BeatPost.bpm(doubleArrayOf(0.0, 0.5, 1.0)))
     }
+
+    @Test fun bpmTetapPasKalauAdaKetukanTerlewat() {
+        val t = DoubleArray(30) { Math.round(it * 60.0 / 128 * 50) / 50.0 }.filterIndexed { i, _ -> i != 7 && i != 15 }.toDoubleArray()
+        assertEquals(128.0, BeatPost.bpm(t)!!, 0.5)
+    }
+
+    @Test fun ketukanSatuDariTebakanModel() {
+        // 120 BPM mulai 0,3 dtk; ketukan 1 (birama 4/4) jatuh di ketukan ke-2, 6, 10, ...
+        val beats = DoubleArray(24) { 0.3 + it * 0.5 }
+        val downs = doubleArrayOf(1.31, 3.29, 5.3, 7.3)
+        assertEquals(1.3, BeatPost.firstDownbeat(beats, downs, 4)!!, 0.02)
+    }
 }

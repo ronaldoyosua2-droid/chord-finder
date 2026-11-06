@@ -30,7 +30,8 @@ import com.ronald.chordfinder.music.Resample
 class CaptureService : Service() {
     interface Listener {
         fun progress(p: Float, secondsLeft: Int)
-        fun done(audio22k: FloatArray?, error: String?)
+        /** [startWall] = SystemClock.elapsedRealtime() (ms) saat sampel pertama terdengar di HP. */
+        fun done(audio22k: FloatArray?, error: String?, startWall: Long)
     }
 
     companion object {
@@ -117,11 +118,13 @@ class CaptureService : Service() {
         val buf = ShortArray(4096)
         var got = 0
         var lastSec = -1
+        var startWall = 0L
         try {
             rec.startRecording()
             while (got < total && !cancel) {
                 val n = rec.read(buf, 0, minOf(buf.size, total - got))
                 if (n <= 0) break
+                if (got == 0) startWall = firstSampleWall(rec, rate, n)
                 for (i in 0 until n) all[got + i] = buf[i] / 32768f
                 got += n
                 val left = ((total - got) / rate) + 1
@@ -139,12 +142,27 @@ class CaptureService : Service() {
         }
         if (cancel) { finish(null, null); return }
         val audio = Resample.to22k(all.copyOf(got), rate)
-        finish(audio, null)
+        finish(audio, null, startWall)
     }
 
-    private fun finish(audio: FloatArray?, error: String?) {
+    /** Kapan sampel pertama diambil, dalam jam SystemClock.elapsedRealtime(). */
+    private fun firstSampleWall(rec: AudioRecord, rate: Int, readFrames: Int): Long {
+        val nowWall = android.os.SystemClock.elapsedRealtime()
+        if (Build.VERSION.SDK_INT >= 24) {
+            try {
+                val ts = android.media.AudioTimestamp()
+                if (rec.getTimestamp(ts, android.media.AudioTimestamp.TIMEBASE_MONOTONIC) == AudioRecord.SUCCESS) {
+                    val frame0Nano = ts.nanoTime - ts.framePosition * 1_000_000_000L / rate
+                    return nowWall - (System.nanoTime() - frame0Nano) / 1_000_000L
+                }
+            } catch (e: Exception) { }
+        }
+        return nowWall - readFrames * 1000L / rate
+    }
+
+    private fun finish(audio: FloatArray?, error: String?, startWall: Long = 0L) {
         main.post {
-            listener?.done(audio, error)
+            listener?.done(audio, error, startWall)
             try { projection?.stop() } catch (e: Exception) { }
             projection = null
             stopForeground(STOP_FOREGROUND_REMOVE)

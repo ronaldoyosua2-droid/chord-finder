@@ -19,6 +19,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.ronald.chordfinder.music.BeatDetector
+import com.ronald.chordfinder.music.BeatPost
 import com.ronald.chordfinder.music.Line
 import com.ronald.chordfinder.music.MetroConfig
 import com.ronald.chordfinder.music.SeqItem
@@ -41,6 +42,10 @@ interface MetroHost {
     fun pauseVideo()
     /** Minta izin Android untuk mengambil suara HP (MediaProjection). */
     fun requestCapture(done: (Int, android.content.Intent?) -> Unit)
+    /** Posisi video (detik) pada jam SystemClock.elapsedRealtime() [wallMs], atau null kalau tidak diputar. */
+    fun videoTimeAt(wallMs: Long): Double?
+    /** Simpan sinkron (seperti ♩ Sinkron manual) dan nyalakan "Ikut video". */
+    fun applyAutoSync(bpm: Double, offsetSec: Double)
 }
 
 /** Semua tampilan metronom: tombol, bar ketukan, hitungan besar, panel atur, editor urutan. */
@@ -605,7 +610,7 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
         }
         AppLog.ai("Mulai deteksi · sumber: ${if (fromDevice) "HP" else "mikrofon"} · $detectSeconds dtk")
 
-        fun analyze(audio: FloatArray?, error: String?) {
+        fun analyze(audio: FloatArray?, error: String?, videoT0: Double? = null) {
             if (!d.isShowing) return
             if (audio == null || audio.size < LogMelSize.MIN) {
                 finished = true
@@ -666,6 +671,27 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
                     msg.gravity = Gravity.CENTER
                     msg.text = "Terdeteksi sekitar $bpm BPM ($how).\nKalau terasa terlalu cepat/lambat, pakai ÷2 atau ×2."
                     result(bpm)
+                    // Sinkron otomatis: hanya dari HP, video diputar sepanjang mendengar, dan AI menemukan ketukan
+                    if (fromDevice && ai != null && videoT0 != null) {
+                        val first = BeatPost.firstDownbeat(ai.times, ai.downbeats, config.beats) ?: ai.times.first()
+                        val offset = videoT0 + first
+                        val bars = Math.round(ai.times.size.toDouble() / config.beats).toInt()
+                        AppLog.ai("Sinkron otomatis: ketukan 1 di ${"%.2f".format(offset)} dtk video · ${"%.1f".format(ai.exact)} BPM · $bars bar")
+                        host.applyAutoSync(ai.exact, offset)
+                        val m = (offset / 60).toInt()
+                        val sec = offset - m * 60
+                        box.addView(a.vbox().apply {
+                            setPadding(a.dp(12), a.dp(10), a.dp(12), a.dp(10))
+                            background = rounded(C.BG, a.dpf(12f), a.dp(2), C.GO)
+                            addView(a.label("🔗 Metronom ikut video: ON", 14.5f, C.GO, bold = true))
+                            addView(a.label("Ketukan 1 ditemukan di detik $m:${"%04.1f".format(sec).replace('.', ',')} video. " +
+                                "Setiap kali video diputar, digeser, atau dijeda, metronom ikut.", 13.5f, C.TEXT).apply {
+                                setPadding(0, a.dp(2), 0, 0)
+                            })
+                        }, box.indexOfChild(note), lp(MATCH, WRAP).apply { topMargin = a.dp(12) })
+                    } else if (fromDevice && ai != null) {
+                        AppLog.ai("Sinkron otomatis: tidak dibuat (video tidak diputar sepanjang mendengar)")
+                    }
                 }
             }.start()
         }
@@ -682,12 +708,14 @@ class MetroUi(private val a: AppCompatActivity, private val host: MetroHost) : M
                         msg.text = "📱 Mendengarkan suara video… $secondsLeft detik lagi"
                         if (host.videoPlaying) videoOn = true
                     }
-                    override fun done(audio22k: FloatArray?, error: String?) {
+                    override fun done(audio22k: FloatArray?, error: String?, startWall: Long) {
                         CaptureService.listener = null
                         val playingAtEnd = host.videoPlaying
                         AppLog.ai("Status video saat selesai mendengar: ${if (playingAtEnd) "diputar" else "dijeda"}")
+                        val t0 = if (playingAtStart && playingAtEnd && startWall > 0) host.videoTimeAt(startWall) else null
+                        t0?.let { AppLog.ai("Rekaman mulai di ${"%.2f".format(it)} dtk video") }
                         if (!wasPlaying) host.pauseVideo()
-                        analyze(audio22k, error)
+                        analyze(audio22k, error, t0)
                     }
                 }
                 CaptureService.start(a, grant.first, grant.second, detectSeconds)

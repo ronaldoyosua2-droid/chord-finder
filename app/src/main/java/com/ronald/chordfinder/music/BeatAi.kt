@@ -124,25 +124,57 @@ object BeatPost {
         return DoubleArray(res.size) { res[it] / FPS }
     }
 
-    /** Tempo dari median jarak antar-ketukan. Null kalau ketukannya terlalu sedikit. */
-    fun bpm(times: DoubleArray): Double? {
+    /** Garis ketukan rapi: waktu ketukan ke-0 [a] dan jarak antar-ketukan [period] (detik). */
+    data class Grid(val a: Double, val period: Double, val index: IntArray)
+
+    /**
+     * Cocokkan semua ketukan ke garis lurus t = a + period·k. Nomor ketukan k ditebak dari median jarak,
+     * jadi satu-dua ketukan yang terlewat tidak merusak hasil.
+     */
+    fun grid(times: DoubleArray): Grid? {
         if (times.size < 4) return null
         val d = DoubleArray(times.size - 1) { times[it + 1] - times[it] }.sorted()
         val med = if (d.size % 2 == 1) d[d.size / 2] else (d[d.size / 2 - 1] + d[d.size / 2]) / 2
         if (med <= 0) return null
-        // Kalau jaraknya rapi (semua dalam ±25% median), pakai garis lurus terbaik melalui semua ketukan:
-        // lebih teliti daripada median yang terkunci ke kelipatan 20 ms.
-        val steady = d.all { it in med * 0.75..med * 1.25 }
-        val period = if (steady) {
-            val n = times.size
-            val mx = (n - 1) / 2.0
-            val my = times.average()
-            var sxy = 0.0; var sxx = 0.0
-            for (i in 0 until n) { sxy += (i - mx) * (times[i] - my); sxx += (i - mx) * (i - mx) }
-            sxy / sxx
-        } else med
-        val b = 60.0 / period
+        // nomor ketukan dari jarak ke ketukan sebelumnya (lompat 2 kalau ada yang terlewat)
+        val idx = IntArray(times.size)
+        for (i in 1 until times.size) idx[i] = idx[i - 1] + Math.round((times[i] - times[i - 1]) / med).toInt().coerceAtLeast(1)
+        val n = times.size
+        val mx = idx.average()
+        val my = times.average()
+        var sxy = 0.0; var sxx = 0.0
+        for (i in 0 until n) { sxy += (idx[i] - mx) * (times[i] - my); sxx += (idx[i] - mx) * (idx[i] - mx) }
+        if (sxx <= 0) return null
+        val period = sxy / sxx
+        if (period <= 0) return null
+        return Grid(my - period * mx, period, idx)
+    }
+
+    /** Tempo (BPM) dari garis ketukan. Null kalau ketukannya terlalu sedikit. */
+    fun bpm(times: DoubleArray): Double? {
+        val g = grid(times) ?: return null
+        val b = 60.0 / g.period
         return if (b in 30.0..260.0) b else null
+    }
+
+    /**
+     * Ketukan 1 (awal birama) pertama: dari [beatsPerBar] kemungkinan posisi pada garis ketukan,
+     * pilih yang paling sering bertepatan dengan tebakan ketukan-1 model ([downbeats]).
+     * Hasil: waktu (detik) ketukan 1 pertama di dalam rekaman.
+     */
+    fun firstDownbeat(times: DoubleArray, downbeats: DoubleArray, beatsPerBar: Int): Double? {
+        val g = grid(times) ?: return null
+        val bpb = beatsPerBar.coerceAtLeast(1)
+        val kMin = g.index.first()
+        val score = IntArray(bpb)
+        for (t in downbeats) {
+            val k = Math.round((t - g.a) / g.period).toInt()
+            if (Math.abs(g.a + k * g.period - t) < g.period * 0.3) score[Math.floorMod(k, bpb)]++
+        }
+        val best = score.indices.maxByOrNull { score[it] } ?: 0
+        var k = kMin
+        while (Math.floorMod(k, bpb) != best) k++
+        return g.a + k * g.period
     }
 }
 

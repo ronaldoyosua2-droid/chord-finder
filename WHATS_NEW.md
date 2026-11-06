@@ -1,3 +1,3 @@
-- ▶ **Tempo detection "Langsung dari HP":** the video is now played automatically after you give permission (Android's permission dialog paused it, so the AI heard only silence). Listening starts once the video is really playing, and a paused video is paused again afterwards.
-- 💬 If the song's video isn't open yet, the app asks you to open it first or use the microphone.
-- 🧾 The app log now records whether the video was playing while listening, and tells you when the phone blocks capturing video sound.
+- 🔗 **Automatic video sync with AI:** after 🎤 Deteksi with "Langsung dari HP", the AI also finds where the beats (and beat 1 of each bar) fall in the video, saves it as the song's sync and turns on **♩ Ikut video**. Just press ▶ on the video and the metronome plays along, following pause and seeking. No manual tapping needed.
+- 🧾 The app log now records when the metronome starts/stops following the video and the average difference between metronome and video every 30 seconds.
+- 🎯 More precise BPM when the AI misses a beat or two.

@@ -175,6 +175,8 @@ class SongActivity : AppCompatActivity() {
             override val videoPlaying get() = this@SongActivity.player != null && this@SongActivity.ytState == 1
             override fun playVideo() { this@SongActivity.player?.evaluateJavascript("play()", null) }
             override fun pauseVideo() { this@SongActivity.player?.evaluateJavascript("pause()", null) }
+            override fun videoTimeAt(wallMs: Long): Double? = this@SongActivity.videoTimeAt(wallMs)
+            override fun applyAutoSync(bpm: Double, offsetSec: Double) = this@SongActivity.applyAutoSync(bpm, offsetSec)
             override fun requestCapture(done: (Int, Intent?) -> Unit) = this@SongActivity.requestCapture(done)
         })
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -857,17 +859,56 @@ class SongActivity : AppCompatActivity() {
     private fun videoNow(): Double =
         if (vState == 1) vTime + (android.os.SystemClock.elapsedRealtime() - vWall) / 1000.0 else vTime
 
+    /** Posisi video pada jam [wallMs] (elapsedRealtime), dihitung dari laporan pemutar terakhir. */
+    private fun videoTimeAt(wallMs: Long): Double? =
+        if (vState == 1 && vWall > 0) vTime + (wallMs - vWall) / 1000.0 else null
+
+    /** Sinkron dari AI (sama seperti ♩ Sinkron manual): simpan dan nyalakan "Ikut video". */
+    private fun applyAutoSync(bpm: Double, offsetSec: Double) {
+        if (song.ytId.isEmpty()) return
+        song.syncBpm = bpm
+        song.syncOffset = offsetSec.coerceAtLeast(0.0)
+        song.syncVideo = song.ytId
+        song.syncOn = true
+        song.bpm = Math.round(bpm).toInt()
+        if (!saved) save() else persistIfSaved()
+        metro.userStopped = false
+        // metronom yang dinyalakan manual dimatikan; "Ikut video" yang menyalakannya lagi sesuai video
+        if (metro.isRunning && !metro.syncRunning) metro.stop(byUser = false)
+        updateSyncTools()
+        metro.refreshButton()
+    }
+
+    // catatan selisih metronom vs video (rata-rata tiap 30 detik)
+    private var driftSum = 0.0
+    private var driftN = 0
+    private var driftSince = 0L
+
     /** Dipanggil tiap ~200 ms dari pemutar: metronom ikut play/pause/geser video. */
     private fun onVideoTick() {
         if (tapping) return
         if (vState != 1) {
             metro.userStopped = false
-            if (metro.syncRunning) metro.stop(byUser = false)
+            if (metro.syncRunning) {
+                metro.stop(byUser = false)
+                AppLog.i("Metronom ikut video berhenti (video dijeda)")
+            }
             return
         }
         if (!song.hasSync || !song.syncOn || metro.userStopped) return
-        if (!metro.syncRunning) { metro.startSynced(videoNow()); return }
+        if (!metro.syncRunning) {
+            AppLog.i("Metronom ikut video mulai di ${"%.2f".format(videoNow())} dtk")
+            metro.startSynced(videoNow())
+            driftSum = 0.0; driftN = 0; driftSince = android.os.SystemClock.elapsedRealtime()
+            return
+        }
         val drift = (videoNow() - song.syncOffset) - metro.syncPosition()
+        driftSum += drift; driftN++
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - driftSince >= 30_000 && driftN > 0) {
+            AppLog.i("Sinkron: selisih rata2 ${"%+.2f".format(driftSum / driftN)} dtk")
+            driftSum = 0.0; driftN = 0; driftSince = now
+        }
         // Video digeser / tersendat: mulai ulang di posisi yang benar
         if (Math.abs(drift) > 0.25) {
             AppLog.w("Sinkron video: geser ${"%.2f".format(drift)} dtk, diulang")

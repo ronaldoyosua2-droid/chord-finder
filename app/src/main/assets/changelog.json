@@ -1,4 +1,9 @@
 [
+  {"v": "1.0.14", "date": "6 Nov 2026", "items": [
+    ["new", "Automatic video sync: tempo detection from the phone also finds the beats and beat 1 in the video and turns on Ikut video, so the metronome plays along when you press play"],
+    ["new", "App log records when the metronome follows the video and the average metronome–video difference every 30 seconds"],
+    ["fix", "More precise BPM when the AI misses a beat or two"]
+  ]},
   {"v": "1.0.13", "date": "5 Nov 2026", "items": [
     ["fix", "Tempo detection from the phone: the video is played automatically after permission is given (it was paused, so only silence was heard) and paused again afterwards if it was paused before"],
     ["new", "Message to open the song's video first (or use the microphone) when choosing Langsung dari HP"],
