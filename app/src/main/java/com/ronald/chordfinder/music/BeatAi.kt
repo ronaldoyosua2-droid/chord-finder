@@ -136,18 +136,32 @@ object BeatPost {
         val d = DoubleArray(times.size - 1) { times[it + 1] - times[it] }.sorted()
         val med = if (d.size % 2 == 1) d[d.size / 2] else (d[d.size / 2 - 1] + d[d.size / 2]) / 2
         if (med <= 0) return null
+        // buang ketukan "sisipan" yang terlalu dekat dengan ketukan sebelumnya
+        val kept = ArrayList<Double>()
+        for (t in times) if (kept.isEmpty() || t - kept.last() >= med * 0.6) kept.add(t)
+        if (kept.size < 4) return null
         // nomor ketukan dari jarak ke ketukan sebelumnya (lompat 2 kalau ada yang terlewat)
-        val idx = IntArray(times.size)
-        for (i in 1 until times.size) idx[i] = idx[i - 1] + Math.round((times[i] - times[i - 1]) / med).toInt().coerceAtLeast(1)
-        val n = times.size
-        val mx = idx.average()
-        val my = times.average()
-        var sxy = 0.0; var sxx = 0.0
-        for (i in 0 until n) { sxy += (idx[i] - mx) * (times[i] - my); sxx += (idx[i] - mx) * (idx[i] - mx) }
-        if (sxx <= 0) return null
-        val period = sxy / sxx
-        if (period <= 0) return null
-        return Grid(my - period * mx, period, idx)
+        val idx = IntArray(kept.size)
+        for (i in 1 until kept.size) idx[i] = idx[i - 1] + Math.round((kept[i] - kept[i - 1]) / med).toInt().coerceAtLeast(1)
+        var use = BooleanArray(kept.size) { true }
+        var fit: Pair<Double, Double>? = null
+        repeat(2) {
+            var n = 0; var mx = 0.0; var my = 0.0
+            for (i in kept.indices) if (use[i]) { n++; mx += idx[i]; my += kept[i] }
+            if (n < 4) return fit?.let { Grid(it.first, it.second, idx) }
+            mx /= n; my /= n
+            var sxy = 0.0; var sxx = 0.0
+            for (i in kept.indices) if (use[i]) { sxy += (idx[i] - mx) * (kept[i] - my); sxx += (idx[i] - mx) * (idx[i] - mx) }
+            if (sxx <= 0) return null
+            val p = sxy / sxx
+            if (p <= 0) return null
+            val a0 = my - p * mx
+            fit = a0 to p
+            // ketukan yang menyimpang jauh dari garis tidak dipakai di putaran kedua
+            use = BooleanArray(kept.size) { i -> Math.abs(a0 + p * idx[i] - kept[i]) < p * 0.15 }
+        }
+        val f = fit ?: return null
+        return Grid(f.first, f.second, idx)
     }
 
     /** Tempo (BPM) dari garis ketukan. Null kalau ketukannya terlalu sedikit. */
